@@ -1,0 +1,49 @@
+{
+  "name": "unistack",
+  "version": "0.0.0",
+  "description": "UniStack is a modern javascript framework.",
+  "main": "index.js",
+  "scripts": {
+    "test": "cross-env NODE_ENV=testing nutra --config ./nutra.config.js",
+    "build": "babel src --out-dir dist",
+    "prepublish": "npm run build"
+  },
+  "bin": {
+    "unistack": "./bin/unistack.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/m-a-r-c-e-l-i-n-o/unistack.git"
+  },
+  "keywords": [
+    "UniStack",
+    "framework",
+    "react",
+    "redux",
+    "graphql",
+    "hot-reload"
+  ],
+  "author": "m-a-r-c-e-l-i-n-o <me@marceli.no>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/m-a-r-c-e-l-i-n-o/unistack/issues"
+  },
+  "homepage": "https://github.com/m-a-r-c-e-l-i-n-o/unistack#readme",
+  "devDependencies": {
+    "babel-cli": "6.10.1",
+    "babel-preset-es2016-node5": "^1.1.2",
+    "cross-env": "^1.0.8",
+    "mock-stdin": "^0.3.0",
+    "nutra": "0.0.5",
+    "nutra-jasmine-coverage-babel-preset": "0.0.1",
+    "nutra-minimal-reporter": "0.0.0"
+  },
+  "dependencies": {
+    "argv": "0.0.2",
+    "fs-extra": "^0.30.0",
+    "gulp": "github:gulpjs/gulp#4.0",
+    "inquirer": "^1.1.0",
+    "jspm": "^0.17.0-beta.22",
+    "lodash": "^4.13.1"
+  }
+}
