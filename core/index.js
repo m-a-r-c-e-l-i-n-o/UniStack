@@ -1,3 +1,8 @@
+import Simple from './simple.js'
+
+console.log(Simple())
+
+/*
 var jspm = require('jspm')
 jspm.setPackagePath('.')
 var builder = new jspm.Builder()
@@ -14,3 +19,4 @@ builder.bundle('./core/simple.js', {
     // get the depCache configuration for the tree
     var depCache = builder.getDepCache(output.tree)
 });
+*/

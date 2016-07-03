@@ -1,3 +1,3 @@
-import Simple from './simple-2.js'
-
-console.log(Simple())
+export default function () {
+    return 'Hello World Normal!'
+}

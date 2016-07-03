@@ -6,7 +6,11 @@
   "scripts": {
     "test": "cross-env NODE_ENV=testing nutra --config ./nutra.config.js",
     "build": "babel src --out-dir dist",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "jspm-setup": "jspm init",
+    "jspm-test": "jspm run core/index.js",
+    "jspm-install": "jspm install --dev npm:babel-plugin-transform-react-jsx core-js && jspm install react react-dom",
+    "jspm-install-all": "jspm install"
   },
   "bin": {
     "unistack": "./bin/unistack.js"
@@ -45,5 +49,13 @@
     "inquirer": "^1.1.0",
     "jspm": "^0.17.0-beta.22",
     "lodash": "^4.13.1"
+  },
+  "jspm": {
+    "name": "unistack",
+    "main": "core/cli.js",
+    "dependencies": {},
+    "devDependencies": {
+      "plugin-babel": "npm:systemjs-plugin-babel@^0.0.12"
+    }
   }
 }

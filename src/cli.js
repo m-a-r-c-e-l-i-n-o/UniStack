@@ -99,10 +99,15 @@ const CLI = {
     copyBaseDirectoriesToProject () {
         Fs.copySync(Path.join(__dirname, '../base'), AppConfig.base.directory)
     },
+    installDependencies() {
+        const JSPM = require('jspm')
+        return JSPM.install(true, { lock: true })
+    },
     initInteractiveSetup () {
         this.validateReservedDirectories()
         this.validatePackageJSON()
         this.copyBaseDirectoriesToProject()
+        this.installDependencies()
         //const answers = await this.askSetupQuestions()
         //console.log(answers)
     },

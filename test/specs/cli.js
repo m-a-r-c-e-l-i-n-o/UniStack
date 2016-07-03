@@ -176,55 +176,48 @@ describe ('CLI askSetupQuestions()', () => {
 describe ('CLI initInteractiveSetup()', () => {
     beforeEach(() => {
         CLI.validateReservedDirectories = ((original) => {
-            return (restore) => {
-                if (restore) {
-                    CLI.validateReservedDirectories = original
-                }
-            }
+            return () => CLI.validateReservedDirectories = original
         })(CLI.validateReservedDirectories)
         CLI.validatePackageJSON = ((original) => {
-            return (restore) => {
-                if (restore) {
-                    CLI.validatePackageJSON = original
-                }
-            }
+            return () => CLI.validatePackageJSON = original
         })(CLI.validatePackageJSON)
         CLI.copyBaseDirectoriesToProject = ((original) => {
-            return (restore) => {
-                if (restore) {
-                    CLI.copyBaseDirectoriesToProject = original
-                }
-            }
+            return () => CLI.copyBaseDirectoriesToProject = original
         })(CLI.copyBaseDirectoriesToProject)
-    })
-    afterEach(() => {
-        CLI.validateReservedDirectories(true)
-        CLI.validatePackageJSON(true)
-        CLI.copyBaseDirectoriesToProject(true)
+        CLI.installDependencies = ((original) => {
+            return () => CLI.installDependencies = original
+        })(CLI.installDependencies)
     })
     it ('should validate that reserved directories are not present.', () => {
-        spyOn(CLI, 'validateReservedDirectories').and.callThrough()
+        spyOn(CLI, 'validateReservedDirectories')
         CLI.initInteractiveSetup(baseCommand)
         expect(CLI.validateReservedDirectories).toHaveBeenCalledTimes(1)
     })
     it ('should validate that a "package.json" file is present in the cwd.', () => {
-        spyOn(CLI, 'validatePackageJSON').and.callThrough()
+        spyOn(CLI, 'validatePackageJSON')
         CLI.initInteractiveSetup(baseCommand)
         expect(CLI.validatePackageJSON).toHaveBeenCalledTimes(1)
     })
     it ('should copy base directories to project directory.', () => {
-        spyOn(CLI, 'copyBaseDirectoriesToProject').and.callThrough()
+        spyOn(CLI, 'copyBaseDirectoriesToProject')
         CLI.initInteractiveSetup(baseCommand)
         expect(CLI.copyBaseDirectoriesToProject).toHaveBeenCalledTimes(1)
         Fs.removeSync(Path.join(AppConfig.base.directory, 'src'))
         Fs.removeSync(Path.join(AppConfig.base.directory, 'dist'))
     })
+    it ('should install jspm dependencies.', () => {
+        spyOn(CLI, 'installDependencies')
+        CLI.initInteractiveSetup(baseCommand)
+        expect(CLI.installDependencies).toHaveBeenCalledTimes(1)
+    })
 })
 
 describe ('CLI copyBaseDirectoriesToProject()', () => {
     it ('should copy base directories and files to project directory.', () => {
-        CLI.copyBaseDirectoriesToProject(true)
-        CLI.copyBaseDirectoriesToProject()
+        const result = CLI.copyBaseDirectoriesToProject()
+        if (result === CLI.copyBaseDirectoriesToProject) {
+            CLI.copyBaseDirectoriesToProject()
+        }
         // app/src
         const src = Path.join(AppConfig.base.directory, 'src')
         expect(() => Fs.lstatSync(src)).not.toThrowError()
@@ -281,6 +274,31 @@ describe ('CLI copyBaseDirectoriesToProject()', () => {
         expect(() => Fs.lstatSync(dist)).not.toThrowError()
         Fs.removeSync(Path.join(AppConfig.base.directory, 'src'))
         Fs.removeSync(Path.join(AppConfig.base.directory, 'dist'))
+    })
+})
+
+describe ('CLI installDependencies()', () => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000
+    it ('should install jspm dependencies.', (done) => {
+        const jspmConfig = Path.join(__dirname, '../../jspm.config.js')
+        const jspmConfigBA = jspmConfig + '-ba'
+        Fs.copySync(jspmConfig, jspmConfigBA)
+        let result = CLI.installDependencies()
+        if (result === CLI.installDependencies) {
+            result = CLI.installDependencies()
+        }
+        result.then(() => {
+            const jspmPackages = Path.join(__dirname, '../../jspm_packages')
+            expect(() => Fs.lstatSync(jspmPackages)).not.toThrowError()
+            Fs.removeSync(jspmPackages)
+            Fs.removeSync(jspmConfig)
+            Fs.renameSync(jspmConfigBA, jspmConfig)
+            done()
+        }).catch(e => {
+            Fs.removeSync(jspmConfig)
+            Fs.renameSync(jspmConfigBA, jspmConfig)
+            console.log(e.stack)
+        })
     })
 })
 
