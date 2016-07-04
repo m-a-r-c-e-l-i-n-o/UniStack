@@ -1,6 +1,6 @@
 import { createStore, applyMiddleware } from 'redux'
 import thunk from 'redux-thunk';
-import reducers from './reducers/index'
+import reducers from 'client-app/shared/reducers/index.js'
 
 export function createSharedStore( initialState, devTools ) {
     return applyMiddleware( thunk )( createStore )(

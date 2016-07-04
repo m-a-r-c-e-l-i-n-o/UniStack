@@ -84,7 +84,7 @@ const CLI = {
             )
         }
     },
-    getProjectName () {
+    getProjectName() {
         let projectName
         try {
             projectName = require(
@@ -93,25 +93,27 @@ const CLI = {
         } catch (e) {}
         return projectName || Path.basename(AppConfig.base.directory)
     },
-    askSetupQuestions () {
+    askSetupQuestions() {
         return Inquirer.prompt(this.setupQuestions)
     },
-    copyBaseDirectoriesToProject () {
+    copyBaseDirectoriesToProject() {
         Fs.copySync(Path.join(__dirname, '../base'), AppConfig.base.directory)
     },
     installDependencies() {
         const JSPM = require('jspm')
         return JSPM.install(true, { lock: true })
     },
-    initInteractiveSetup () {
+    initInteractiveSetup() {
         this.validateReservedDirectories()
         this.validatePackageJSON()
         this.copyBaseDirectoriesToProject()
         this.installDependencies()
-        //const answers = await this.askSetupQuestions()
-        //console.log(answers)
+        return this.askSetupQuestions()
     },
-    parseArguments (processArgs) {
+    destroyProject() {
+        Fs.emptyDirSync(AppConfig.base.directory)
+    },
+    parseArguments(processArgs) {
         if (!Array.isArray(processArgs)) {
             processArgs = []
         }
@@ -131,10 +133,10 @@ const CLI = {
             throw new Error(AppConfig.errors.invalidCLIArguments)
         }
     },
-    startDevEnviroment (config) {
+    startDevEnviroment(config) {
         console.log('Running', config)
     },
-    handleError (error, warning, fatal) {
+    handleError(error, warning, fatal) {
         if (warning) {
             error.stack = ''
         }

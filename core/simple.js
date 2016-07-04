@@ -1,3 +1,5 @@
+import React from 'react'
+
 export default function () {
-    return 'Hello World Normal!'
+    return <h1>Hello World Normal!</h1>
 }

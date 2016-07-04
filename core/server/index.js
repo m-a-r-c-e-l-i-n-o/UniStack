@@ -1,5 +1,5 @@
 if ( process.env.NODE_ENV === 'development' ) {
-    process.stdout.write( 'unistack:importing-modules' )
+    console.log( 'unistack:importing-modules' )
 }
 
 import 'source-map-support/register.js#?ENV|development'
@@ -11,13 +11,13 @@ import React from 'react'
 import { renderToString, renderToStaticMarkup } from 'react-dom/server'
 import { Provider } from 'react-redux'
 import { match, RouterContext } from 'react-router'
-import createSharedStore from '../shared/store'
-import { addTodoOptimistic } from '../shared/actions/index'
-import { routes } from '../shared/routes'
-import Layout from './components/Layout'
+import createSharedStore from '../shared/store.js'
+import { addTodoOptimistic } from 'client-app/shared/actions/index.js'
+import { routes } from 'client-app/shared/routes.js'
+import ClientLayout from 'client-app/client/components/Layout.js'
 
 if ( process.env.NODE_ENV === 'development' ) {
-    process.stdout.write( 'unistack:running-app-code' )
+    console.log( 'unistack:running-app-code' )
 }
 
 let app = new Koa()
@@ -102,26 +102,23 @@ app.use( async ( ctx, next ) => {
         let layoutHTML =
             '<!DOCTYPE html public="UniStackJS">' +
             renderToStaticMarkup(
-                <Layout initialState={store.getState()}>
-                    <head>
-                        <meta charSet="utf-8" />
-                        <title>{title}</title>
-                        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-                        <link rel="stylesheet" href="/src/client/css/main.css"/>
-                    </head>
-                    <body>
-                    <div id="container">{componentHTML}</div>
-                    </body>
-                </Layout>
+                <ClientLayout
+                    title={title}
+                    componentHTML={componentHTML}
+                    initialState={store.getState()}
+                >
+                </ClientLayout>
             )
         ctx.body = layoutHTML;
     } )
 } )
 if ( process.env.NODE_ENV === 'development' ) {
-    process.stdout.write( 'unistack:app-server-loading' )
+    console.log( 'unistack:app-server-loading' )
 }
-app.listen( ENV.serverPort, () => {
+const server = app.listen( ENV.serverPort, () => {
     if ( process.env.NODE_ENV === 'development' ) {
-        process.stdout.write( 'unistack:app-server-loaded' )
+        console.log( 'unistack:app-server-loaded' )
     }
 } )
+
+export default server

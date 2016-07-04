@@ -6,7 +6,7 @@ var App = {
 }
 
 App.base.directory = ( process.env['NODE_ENV'] === 'testing'
-    ? Path.join(process.cwd(), 'test/app')
+    ? Path.join(process.cwd(), 'core/server/test/app')
     : process.cwd()
 )
 App.base.directories =  [
@@ -30,4 +30,9 @@ App.errors.invalidPackageJSON = `
     Could not parse "package.json".
     Please make sure that a valid "package.json" file exists in this directory.
 `
+
+App.development = (
+    typeof window === 'object' && window.__karma__ ?
+    false : true
+)
 module.exports = App

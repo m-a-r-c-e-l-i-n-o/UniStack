@@ -1,7 +1,7 @@
 import Fs from 'fs-extra'
 import Path from 'path'
-import CLI from '../../src/cli.js'
-import AppConfig from '../../app.config.js'
+import CLI from '../../../../src/cli.js'
+import AppConfig from '../../../../app.config.js'
 import BDDStdin from '../lib/bdd-stdin.js'
 
 const baseCommand = ['node', 'unistack']
@@ -134,8 +134,7 @@ describe ('CLI validateReservedDirectories()', () => {
                 directories
             )
         )
-        Fs.removeSync(Path.join(AppConfig.base.directory, 'src'))
-        Fs.removeSync(Path.join(AppConfig.base.directory, 'dist'))
+        Fs.emptyDirSync(AppConfig.base.directory)
     })
 })
 
@@ -174,50 +173,50 @@ describe ('CLI askSetupQuestions()', () => {
 })
 
 describe ('CLI initInteractiveSetup()', () => {
+    const MockCLI = Object.assign({}, CLI)
     beforeEach(() => {
-        CLI.validateReservedDirectories = ((original) => {
-            return () => CLI.validateReservedDirectories = original
-        })(CLI.validateReservedDirectories)
-        CLI.validatePackageJSON = ((original) => {
-            return () => CLI.validatePackageJSON = original
-        })(CLI.validatePackageJSON)
-        CLI.copyBaseDirectoriesToProject = ((original) => {
-            return () => CLI.copyBaseDirectoriesToProject = original
-        })(CLI.copyBaseDirectoriesToProject)
-        CLI.installDependencies = ((original) => {
-            return () => CLI.installDependencies = original
-        })(CLI.installDependencies)
+        MockCLI.validateReservedDirectories = () => {}
+        MockCLI.validatePackageJSON = () => {}
+        MockCLI.copyBaseDirectoriesToProject = () => {}
+        MockCLI.installDependencies = () => {}
+        MockCLI.setupQuestions = []
+    })
+    it ('should return a promise', function () {
+        const promise = MockCLI.askSetupQuestions()
+        expect(typeof promise.then).toBe('function')
+        promise.then(answers => done())
     })
     it ('should validate that reserved directories are not present.', () => {
-        spyOn(CLI, 'validateReservedDirectories')
-        CLI.initInteractiveSetup(baseCommand)
-        expect(CLI.validateReservedDirectories).toHaveBeenCalledTimes(1)
+        spyOn(MockCLI, 'validateReservedDirectories')
+        MockCLI.initInteractiveSetup(baseCommand)
+        expect(MockCLI.validateReservedDirectories).toHaveBeenCalledTimes(1)
     })
     it ('should validate that a "package.json" file is present in the cwd.', () => {
-        spyOn(CLI, 'validatePackageJSON')
-        CLI.initInteractiveSetup(baseCommand)
-        expect(CLI.validatePackageJSON).toHaveBeenCalledTimes(1)
+        spyOn(MockCLI, 'validatePackageJSON')
+        MockCLI.initInteractiveSetup(baseCommand)
+        expect(MockCLI.validatePackageJSON).toHaveBeenCalledTimes(1)
     })
     it ('should copy base directories to project directory.', () => {
-        spyOn(CLI, 'copyBaseDirectoriesToProject')
-        CLI.initInteractiveSetup(baseCommand)
-        expect(CLI.copyBaseDirectoriesToProject).toHaveBeenCalledTimes(1)
-        Fs.removeSync(Path.join(AppConfig.base.directory, 'src'))
-        Fs.removeSync(Path.join(AppConfig.base.directory, 'dist'))
+        spyOn(MockCLI, 'copyBaseDirectoriesToProject')
+        MockCLI.initInteractiveSetup(baseCommand)
+        expect(MockCLI.copyBaseDirectoriesToProject).toHaveBeenCalledTimes(1)
+        Fs.emptyDirSync(AppConfig.base.directory)
     })
     it ('should install jspm dependencies.', () => {
-        spyOn(CLI, 'installDependencies')
-        CLI.initInteractiveSetup(baseCommand)
-        expect(CLI.installDependencies).toHaveBeenCalledTimes(1)
+        spyOn(MockCLI, 'installDependencies')
+        MockCLI.initInteractiveSetup(baseCommand)
+        expect(MockCLI.installDependencies).toHaveBeenCalledTimes(1)
+    })
+    it ('should ask setup questions.', () => {
+        spyOn(MockCLI, 'askSetupQuestions')
+        MockCLI.initInteractiveSetup(baseCommand)
+        expect(MockCLI.askSetupQuestions).toHaveBeenCalledTimes(1)
     })
 })
 
 describe ('CLI copyBaseDirectoriesToProject()', () => {
     it ('should copy base directories and files to project directory.', () => {
-        const result = CLI.copyBaseDirectoriesToProject()
-        if (result === CLI.copyBaseDirectoriesToProject) {
-            CLI.copyBaseDirectoriesToProject()
-        }
+        CLI.copyBaseDirectoriesToProject()
         // app/src
         const src = Path.join(AppConfig.base.directory, 'src')
         expect(() => Fs.lstatSync(src)).not.toThrowError()
@@ -272,32 +271,62 @@ describe ('CLI copyBaseDirectoriesToProject()', () => {
         // app/dist
         const dist = Path.join(AppConfig.base.directory, 'dist')
         expect(() => Fs.lstatSync(dist)).not.toThrowError()
-        Fs.removeSync(Path.join(AppConfig.base.directory, 'src'))
-        Fs.removeSync(Path.join(AppConfig.base.directory, 'dist'))
+        Fs.emptyDirSync(AppConfig.base.directory)
+    })
+})
+
+describe ('CLI destroyProject()', () => {
+    it ('should empty entire app directory.', () => {
+        CLI.copyBaseDirectoriesToProject()
+        CLI.destroyProject()
+        expect(Fs.readdirSync(AppConfig.base.directory).length).toBe(0)
     })
 })
 
 describe ('CLI installDependencies()', () => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000
     it ('should install jspm dependencies.', (done) => {
-        const jspmConfig = Path.join(__dirname, '../../jspm.config.js')
+        const jspmPackages = Path.join(process.cwd(), 'jspm_packages')
+        const jspmPackagesBA = jspmPackages + '-ba'
+        Fs.copySync(jspmPackages, jspmPackagesBA)
+        const jspmConfig = Path.join(process.cwd(), 'jspm.config.js')
         const jspmConfigBA = jspmConfig + '-ba'
         Fs.copySync(jspmConfig, jspmConfigBA)
-        let result = CLI.installDependencies()
-        if (result === CLI.installDependencies) {
-            result = CLI.installDependencies()
-        }
-        result.then(() => {
-            const jspmPackages = Path.join(__dirname, '../../jspm_packages')
+        CLI.installDependencies().then(() => {
+            const jspmPackages = Path.join(process.cwd(), 'jspm_packages')
             expect(() => Fs.lstatSync(jspmPackages)).not.toThrowError()
             Fs.removeSync(jspmPackages)
+            Fs.renameSync(jspmPackagesBA, jspmPackages)
             Fs.removeSync(jspmConfig)
             Fs.renameSync(jspmConfigBA, jspmConfig)
             done()
         }).catch(e => {
+            Fs.removeSync(jspmPackages)
+            Fs.renameSync(jspmPackagesBA, jspmPackages)
             Fs.removeSync(jspmConfig)
             Fs.renameSync(jspmConfigBA, jspmConfig)
             console.log(e.stack)
+        })
+    })
+
+    it ('should install all dependencies required to run server.js.', (done) => {
+        CLI.copyBaseDirectoriesToProject()
+        const server = Path.join(process.cwd(), 'core/server/index.js')
+        const jspm = require('jspm')
+        const complete = (error, message) => {
+            Fs.emptyDirSync(AppConfig.base.directory)
+            if (error) {
+                console.error(message)
+            } else {
+                done()
+            }
+        }
+        jspm.import(server).then(function(server) {
+            server.default.close()
+            complete()
+        })
+        .catch(e => {
+            complete(true, e.stack)
         })
     })
 })
