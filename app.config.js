@@ -5,9 +5,10 @@ var App = {
     errors: {}
 }
 
-App.base.directory = ( process.env['NODE_ENV'] === 'testing'
+App.base.directory = (
+    typeof process === 'object' && process.env['NODE_ENV'] === 'testing'
     ? Path.join(process.cwd(), 'core/server/test/app')
-    : process.cwd()
+    : (typeof process === 'object' ? process.cwd() : '/')
 )
 App.base.directories =  [
     Path.join(App.base.directory, 'src'),
@@ -22,13 +23,13 @@ App.errors.invalidConfigPath = `
     Please provide a valid configuration filename.
     The filename received ({{filename}}) could not be loaded.
 `
-App.errors.occupiedDirectories = `
-    The following {{directories}} directories need to be deleted before installation.
-    Please manually deleted them and try again.
+App.errors.installationDirectoryIsPopulated = `
+    This directory must be empty before installation can commence.
+    Please manually deleted all files (including hidden ones) from directory.
 `
 App.errors.invalidPackageJSON = `
     Could not parse "package.json".
-    Please make sure that a valid "package.json" file exists in this directory.
+    Please make sure that a valid "package.json" file exists in the app directory.
 `
 
 App.development = (

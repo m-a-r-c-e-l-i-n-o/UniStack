@@ -5,6 +5,7 @@ import _ from 'lodash'
 import Inquirer from 'inquirer'
 import AppConfig from '../app.config.js'
 import Argv from 'argv'
+import NPMI from 'npmi'
 
 const CLI = {
     setupQuestions: [{
@@ -27,6 +28,7 @@ const CLI = {
                 )
             }
         } catch (e) {
+            console.log(e)
             this.handleError(e, true, true)
         }
     },
@@ -56,32 +58,9 @@ const CLI = {
         configWrapper(config)
         return config.options
     },
-    validateReservedDirectories() {
-        AppConfig.base.directories.forEach(directory => {
-            let stats
-            try {
-                stats = Fs.lstatSync(directory)
-            } catch (e) {
-                stats = false
-            }
-            if (stats && stats.isDirectory()) {
-                const directories = `"${AppConfig.base.directories.join('", "')}"`
-                throw new Error(
-                    AppConfig.errors.occupiedDirectories.replace(
-                        '{{directories}}',
-                        directories
-                    )
-                )
-            }
-        })
-    },
-    validatePackageJSON() {
-        try {
-            Fs.lstatSync(Path.join(AppConfig.base.directory, 'package.json'))
-        } catch (e) {
-            throw new Error(
-                AppConfig.errors.invalidPackageJSON
-            )
+    validateInstallationDirectory() {
+        if (Fs.readdirSync(AppConfig.base.directory).length > 0) {
+            throw new Error(AppConfig.errors.installationDirectoryIsPopulated)
         }
     },
     getProjectName() {
@@ -93,22 +72,82 @@ const CLI = {
         } catch (e) {}
         return projectName || Path.basename(AppConfig.base.directory)
     },
-    askSetupQuestions() {
-        return Inquirer.prompt(this.setupQuestions)
-    },
     copyBaseDirectoriesToProject() {
         Fs.copySync(Path.join(__dirname, '../base'), AppConfig.base.directory)
     },
-    installDependencies() {
-        const JSPM = require('jspm')
-        return JSPM.install(true, { lock: true })
+    installNPMDependencies() {
+        console.log('Installing NPM dependencies!')
+        return new Promise((resolve, reject) => {
+            const npmiOptions = {
+                path: AppConfig.base.directory
+            }
+            NPMI(npmiOptions, function (err, result) {
+                if (!err) {
+                    console.log('All done installing NPM dependencies!')
+                    resolve(true)
+                } else {
+                    switch(err.code) {
+                        case npmi.LOAD_ERR:
+                            console.log('npm load error')
+                            break;
+                        case npmi.INSTALL_ERR:
+                            console.log('npm install error')
+                            break;
+                        default:
+                            console.log(err.message)
+                    }
+                    reject()
+                }
+            })
+        })
+    },
+    installJSPMDependencies() {
+        const jspm = require('jspm')
+        jspm.setPackagePath(AppConfig.base.directory)
+        return jspm.install(true, { force: true })
+            .catch(e => console.log(e))
+            .then(() => {
+                return true
+            })
+    },
+    askSetupQuestions() {
+        return Inquirer.prompt(this.setupQuestions)
+    },
+    processSetupAnswers(answers) {
+        return Promise.resolve()
+    },
+    setupPackageJSON() {
+        const corePath = Path.join(__dirname, '..', 'core')
+        const packageJSON = Path.join(corePath, 'package.json')
+        const packageJSONObj = require(packageJSON)
+        const configFiles = packageJSONObj.jspm.configFiles
+        configFiles.jspm = 'node_modules/unistack/core/jspm.config.js'
+        const directories = packageJSONObj.jspm.directories
+        directories.packages = 'node_modules/unistack/core/jspm_packages'
+        Fs.writeFileSync(
+            Path.join(AppConfig.base.directory, 'package.json'),
+            JSON.stringify(packageJSONObj, null, '\t')
+        )
+    },
+    initSetup() {
+        this.validateInstallationDirectory()
+        this.setupPackageJSON()
+        this.copyBaseDirectoriesToProject()
+        return Promise.resolve()
+            .then(this.installNPMDependencies.bind(this))
+            .then(this.installJSPMDependencies.bind(this))
+            .catch(e => this.handleError(e))
     },
     initInteractiveSetup() {
-        this.validateReservedDirectories()
-        this.validatePackageJSON()
+        this.validateInstallationDirectory()
+        this.setupPackageJSON()
         this.copyBaseDirectoriesToProject()
-        this.installDependencies()
-        return this.askSetupQuestions()
+        return Promise.resolve({})
+            .then(this.askSetupQuestions.bind(this))
+            .then(this.processSetupAnswers)
+            .then(this.installJSPMDependencies.bind(this))
+            .then(this.installNPMDependencies.bind(this))
+            .catch(e => this.handleError(e))
     },
     destroyProject() {
         Fs.emptyDirSync(AppConfig.base.directory)

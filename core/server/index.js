@@ -3,7 +3,7 @@ if ( process.env.NODE_ENV === 'development' ) {
 }
 
 import 'source-map-support/register.js#?ENV|development'
-import ENV from 'ENV'
+import * as ENV from 'ENV'
 import * as fs from 'fs'
 import Koa from 'koa'
 import KoaSend from 'koa-send'
@@ -14,14 +14,14 @@ import { match, RouterContext } from 'react-router'
 import createSharedStore from '../shared/store.js'
 import { addTodoOptimistic } from 'client-app/shared/actions/index.js'
 import { routes } from 'client-app/shared/routes.js'
-import ClientLayout from 'client-app/client/components/Layout.js'
+import ClientLayout from 'client-app/client/index.js'
 
 if ( process.env.NODE_ENV === 'development' ) {
     console.log( 'unistack:running-app-code' )
 }
 
 let app = new Koa()
-let title = JSON.parse( fs.readFileSync( './package.json', 'utf8' ) ).jspm.title
+let title = 'Hello World!'
 
 if ( process.env.NODE_ENV === 'development' ) {
     app.use( async ( ctx, next ) =>

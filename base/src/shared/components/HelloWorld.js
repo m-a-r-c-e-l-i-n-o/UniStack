@@ -1,21 +1,20 @@
 import React from 'react';
 
-export default class HelloWorld extends React.Component {
-
-    constructor(props) {
-
-        super( props );
-        this.state = { text: 'Quiet...' };
+class Polygon {
+    constructor(height, width) {
+        this.height = height;
+        this.width = width;
     }
-
-    sayHello() {
-
-        this.setState( {
-            text: 'Hello World!'
-        } );
+    get area() {
+        return this.calcArea();
     }
-
-    render() {
-        return <h1 onClick={this.sayHello.bind(this)}>{this.state.text}</h1>;
+    calcArea() {
+        return this.height * this.width;
     }
 }
+
+const HelloWorld = () => (
+    <h1>Hello World!</h1>
+)
+
+export default HelloWorld

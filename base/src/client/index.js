@@ -1,7 +1,7 @@
 import React from 'react'
 import Layout from 'unistack/components/Layout.js'
 
-const CustomLayout = (props) =>
+const CustomLayout = (props) => (
     <Layout initialState={props.initialState}>
         <head>
             <meta charSet="utf-8" />
@@ -13,5 +13,6 @@ const CustomLayout = (props) =>
             <div id="container">{props.componentHTML}</div>
         </body>
     </Layout>
+)
 
 export default CustomLayout

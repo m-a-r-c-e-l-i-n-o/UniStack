@@ -51,14 +51,19 @@ describe ('CLI resolveConfig()', () => {
         expect(CLI.resolveConfig(config)).toBe(config)
     })
     it ('should resolve a config filename', () => {
-        const filename = 'unistack.config.js'
-        const configFilename = Path.join(AppConfig.base.directory, filename)
-        Fs.writeFileSync(configFilename, basicConfig)
-        expect(CLI.resolveConfig(filename))
-        .toEqual({
-            hello: 'from mocked unistack.config.js'
-        })
-        Fs.unlinkSync(configFilename)
+        try {
+            const filename = 'unistack.config.js'
+            const configFilename = Path.join(AppConfig.base.directory, filename)
+            Fs.writeFileSync(configFilename, basicConfig)
+            expect(CLI.resolveConfig(filename))
+            .toEqual({
+                hello: 'from mocked unistack.config.js'
+            })
+            Fs.unlinkSync(configFilename)
+        } catch (e) {
+            console.log(e)
+            throw e
+        }
     })
     it ('should throw error when file is not found', () => {
         const filename = 'unistack.config.js'
@@ -123,13 +128,13 @@ describe ('CLI handleError()', () => {
     })
 })
 
-describe ('CLI validateReservedDirectories()', () => {
+describe ('CLI validateInstallationDirectory()', () => {
     it ('should throw error when one or more reserved directories are present', () => {
         Fs.copySync('/home/marcbraulio/Projects/unistack/base', AppConfig.base.directory)
         const directories = `"${AppConfig.base.directories.join('", "')}"`
-        expect(() => CLI.validateReservedDirectories())
+        expect(() => CLI.validateInstallationDirectory())
         .toThrowError(
-            AppConfig.errors.occupiedDirectories.replace(
+            AppConfig.errors.installationDirectoryIsPopulated.replace(
                 '{{directories}}',
                 directories
             )
@@ -138,18 +143,10 @@ describe ('CLI validateReservedDirectories()', () => {
     })
 })
 
-describe ('CLI validatePackageJSON()', () => {
-    it ('should throw error if "package.json" file is not present in the cwd', () => {
-        expect(() => CLI.validatePackageJSON())
-        .toThrowError(
-            AppConfig.errors.invalidPackageJSON
-        )
+describe ('CLI setupPackageJSON()', () => {
+    it ('', () => {
     })
-    it ('should silence if "package.json" file is present in the cwd', () => {
-        const filename = Path.join(AppConfig.base.directory, 'package.json')
-        Fs.writeFileSync(filename, basicPackageJSON)
-        expect(() => CLI.validatePackageJSON()).not.toThrowError()
-        Fs.removeSync(filename)
+    it ('', () => {
     })
 })
 
@@ -175,26 +172,29 @@ describe ('CLI askSetupQuestions()', () => {
 describe ('CLI initInteractiveSetup()', () => {
     const MockCLI = Object.assign({}, CLI)
     beforeEach(() => {
-        MockCLI.validateReservedDirectories = () => {}
-        MockCLI.validatePackageJSON = () => {}
+        MockCLI.validateInstallationDirectory = () => {}
+        MockCLI.setupPackageJSON = () => {}
         MockCLI.copyBaseDirectoriesToProject = () => {}
-        MockCLI.installDependencies = () => {}
+        MockCLI.askSetupQuestions = () => Promise.resolve()
+        MockCLI.processSetupAnswers = () => Promise.resolve()
+        MockCLI.installJSPMDependencies = () => Promise.resolve()
+        MockCLI.installNPMDependencies = () => Promise.resolve()
         MockCLI.setupQuestions = []
     })
-    it ('should return a promise', function () {
+    it ('should return a promis.e', function () {
         const promise = MockCLI.askSetupQuestions()
         expect(typeof promise.then).toBe('function')
         promise.then(answers => done())
     })
-    it ('should validate that reserved directories are not present.', () => {
-        spyOn(MockCLI, 'validateReservedDirectories')
+    it ('should validate installation directory.', () => {
+        spyOn(MockCLI, 'validateInstallationDirectory')
         MockCLI.initInteractiveSetup(baseCommand)
-        expect(MockCLI.validateReservedDirectories).toHaveBeenCalledTimes(1)
+        expect(MockCLI.validateInstallationDirectory).toHaveBeenCalledTimes(1)
     })
-    it ('should validate that a "package.json" file is present in the cwd.', () => {
-        spyOn(MockCLI, 'validatePackageJSON')
+    it ('should setup "package.json".', () => {
+        spyOn(MockCLI, 'setupPackageJSON')
         MockCLI.initInteractiveSetup(baseCommand)
-        expect(MockCLI.validatePackageJSON).toHaveBeenCalledTimes(1)
+        expect(MockCLI.setupPackageJSON).toHaveBeenCalledTimes(1)
     })
     it ('should copy base directories to project directory.', () => {
         spyOn(MockCLI, 'copyBaseDirectoriesToProject')
@@ -202,15 +202,33 @@ describe ('CLI initInteractiveSetup()', () => {
         expect(MockCLI.copyBaseDirectoriesToProject).toHaveBeenCalledTimes(1)
         Fs.emptyDirSync(AppConfig.base.directory)
     })
-    it ('should install jspm dependencies.', () => {
-        spyOn(MockCLI, 'installDependencies')
-        MockCLI.initInteractiveSetup(baseCommand)
-        expect(MockCLI.installDependencies).toHaveBeenCalledTimes(1)
-    })
     it ('should ask setup questions.', () => {
         spyOn(MockCLI, 'askSetupQuestions')
         MockCLI.initInteractiveSetup(baseCommand)
-        expect(MockCLI.askSetupQuestions).toHaveBeenCalledTimes(1)
+            .then(() => {
+                expect(MockCLI.askSetupQuestions).toHaveBeenCalledTimes(1)
+            })
+    })
+    it ('should process setup answers.', () => {
+        spyOn(MockCLI, 'processSetupAnswers')
+        MockCLI.initInteractiveSetup(baseCommand)
+        .then(() => {
+            expect(MockCLI.processSetupAnswers).toHaveBeenCalledTimes(1)
+        })
+    })
+    it ('should install jspm dependencies.', () => {
+        spyOn(MockCLI, 'installJSPMDependencies')
+        MockCLI.initInteractiveSetup(baseCommand)
+        .then(() => {
+            expect(MockCLI.installJSPMDependencies).toHaveBeenCalledTimes(1)
+        })
+    })
+    it ('should install npm dependencies.', () => {
+        spyOn(MockCLI, 'installNPMDependencies')
+        MockCLI.initInteractiveSetup(baseCommand)
+        .then(() => {
+            expect(MockCLI.installNPMDependencies).toHaveBeenCalledTimes(1)
+        })
     })
 })
 
@@ -283,55 +301,10 @@ describe ('CLI destroyProject()', () => {
     })
 })
 
-describe ('CLI installDependencies()', () => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000
-    it ('should install jspm dependencies.', (done) => {
-        const jspmPackages = Path.join(process.cwd(), 'jspm_packages')
-        const jspmPackagesBA = jspmPackages + '-ba'
-        Fs.copySync(jspmPackages, jspmPackagesBA)
-        const jspmConfig = Path.join(process.cwd(), 'jspm.config.js')
-        const jspmConfigBA = jspmConfig + '-ba'
-        Fs.copySync(jspmConfig, jspmConfigBA)
-        CLI.installDependencies().then(() => {
-            const jspmPackages = Path.join(process.cwd(), 'jspm_packages')
-            expect(() => Fs.lstatSync(jspmPackages)).not.toThrowError()
-            Fs.removeSync(jspmPackages)
-            Fs.renameSync(jspmPackagesBA, jspmPackages)
-            Fs.removeSync(jspmConfig)
-            Fs.renameSync(jspmConfigBA, jspmConfig)
-            done()
-        }).catch(e => {
-            Fs.removeSync(jspmPackages)
-            Fs.renameSync(jspmPackagesBA, jspmPackages)
-            Fs.removeSync(jspmConfig)
-            Fs.renameSync(jspmConfigBA, jspmConfig)
-            console.log(e.stack)
-        })
-    })
-
-    it ('should install all dependencies required to run server.js.', (done) => {
-        CLI.copyBaseDirectoriesToProject()
-        const server = Path.join(process.cwd(), 'core/server/index.js')
-        const jspm = require('jspm')
-        const complete = (error, message) => {
-            Fs.emptyDirSync(AppConfig.base.directory)
-            if (error) {
-                console.error(message)
-            } else {
-                done()
-            }
-        }
-        jspm.import(server).then(function(server) {
-            server.default.close()
-            complete()
-        })
-        .catch(e => {
-            complete(true, e.stack)
-        })
-    })
-})
-
 describe ('CLI getProjectName()', () => {
+    beforeEach(function () {
+        Fs.emptyDirSync(AppConfig.base.directory)
+    })
     it ('should return the project directory name when "package.json" is not found.', () => {
         expect(CLI.getProjectName()).toBe('app')
     })
@@ -340,5 +313,83 @@ describe ('CLI getProjectName()', () => {
         Fs.writeFileSync(packageJSON, basicPackageJSON)
         expect(CLI.getProjectName()).toBe('basic-app')
         Fs.removeSync(packageJSON)
+    })
+})
+
+describe ('CLI installJSPMDependencies()', () => {
+    const defaultTimeoutInterval = jasmine.DEFAULT_TIMEOUT_INTERVAL
+    const corePath = Path.join(__dirname, '../../../../core')
+    const serverAppPath = Path.join(corePath, 'server', 'test', 'app')
+    const tmpPath = Path.join(corePath, '..', 'tmp')
+    const tmpAppPath = Path.join(tmpPath, 'app')
+    const clientCorePath = Path.join(
+            AppConfig.base.directory,
+            'node_modules/unistack/core'
+        )
+    Fs.removeSync(Path.join(corePath, 'jspm_packages', 'npm'))
+    Fs.removeSync(Path.join(corePath, 'jspm_packages', 'github'))
+    beforeEach(() => {
+        try {
+            CLI.validateInstallationDirectory()
+            CLI.setupPackageJSON()
+            CLI.copyBaseDirectoriesToProject()
+            // mimic npm install unistack
+            Fs.renameSync(serverAppPath, tmpAppPath)
+            Fs.copySync(
+                corePath,
+                Path.join(tmpPath, 'app/node_modules/unistack/core')
+            )
+            Fs.renameSync(tmpAppPath, AppConfig.base.directory)
+        } catch (e) { console.log(e.stack) }
+    })
+    afterEach(() => {
+        try {
+            Fs.renameSync(
+                Path.join(clientCorePath, 'jspm.config.js'),
+                Path.join(corePath, 'jspm.config.js')
+            )
+            Fs.removeSync(Path.join(corePath, 'jspm_packages'))
+            Fs.renameSync(
+                Path.join(clientCorePath, 'jspm_packages'),
+                Path.join(corePath, 'jspm_packages')
+            )
+            Fs.emptyDirSync(AppConfig.base.directory)
+        } catch (e) { console.log(e.stack) }
+    })
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000
+    it ('should install jspm dependencies.', (done) => {
+        /*
+        ############################ ATTENTION ############################
+            This it block has to remain as the first spec on this block.
+            This is, in part, do to the programatic jspm.install(true)
+            being a one time deal per process, and also helps with
+            performance, as jspm.install(true) takes time and there
+            is no benefit in running jspm.install(true) multiple times.
+        ############################ ATTENTION ############################
+        */
+        try {
+            CLI.installJSPMDependencies()
+            .then(() => {
+                const jspmPackages = Path.join(clientCorePath, 'jspm_packages')
+                const jspmNPMPackages = Path.join(jspmPackages, 'npm')
+                const jspmGitHubPackages = Path.join(jspmPackages, 'github')
+                expect(() => Fs.lstatSync(jspmNPMPackages)).not.toThrowError()
+                expect(() => Fs.lstatSync(jspmGitHubPackages)).not.toThrowError()
+                jasmine.DEFAULT_TIMEOUT_INTERVAL = defaultTimeoutInterval
+                done()
+            }).catch(e => { console.log(e.stack) })
+        } catch (e) { console.log(e.stack) }
+    })
+    it ('should install all dependencies required to run server.js.', (done) => {
+        try {
+            const serverFile = Path.join(clientCorePath, 'server/index.js')
+            const jspm = require('jspm')
+            jspm.import(serverFile)
+                .then(function(server) {
+                    server.default.close()
+                    done()
+                })
+                .catch(e => { console.log(e.stack) })
+        } catch (e) { console.log(e.stack) }
     })
 })
