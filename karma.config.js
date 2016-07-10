@@ -4,6 +4,17 @@ var Path = require('path')
 var AppConfig = require('./app.config.js')
 
 var clientCorePath = Path.join('node_modules', 'unistack', 'core')
+function mapPreprocessors (files, plugins) {
+    var obj = {}
+    files.forEach(function(file) { obj[file] = plugins })
+    return obj
+}
+var clientCoreFiles = [
+    Path.join(clientCorePath, '{client/!(reloader),client/!(test)/**}.js'),
+    Path.join(clientCorePath, 'components/**/*.js'),
+    Path.join(clientCorePath, 'shared/**/*.js')
+]
+var preprocessors = mapPreprocessors(clientCoreFiles, [ 'jspm' ])
 
 module.exports = function(config) {
     config.set({
@@ -32,7 +43,13 @@ module.exports = function(config) {
             '/src': '/base/src',
             '/node_modules': '/base/node_modules',
         },
-        reporters: [ 'progress' ],
+        preprocessors: preprocessors,
+        coverageReporter: {
+            type : 'html',
+            dir : Path.join(process.cwd(), 'core/client/test'),
+            subdir: 'coverage'
+        },
+        reporters: [ 'progress', 'jspm' ],
         port: 9876,
         colors: true,
         debug: false,
