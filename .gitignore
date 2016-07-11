@@ -5,12 +5,10 @@ npm-debug.log*
 
 # Dependency directory
 node_modules
-core/jspm_packages/npm
-core/jspm_packages/github
-core/jspm_packages/.dependencies.json
+jspm_packages
 
 # Arbitrary Directories
-core/server/test/app
+test/environment
 dist
 coverage
 tmp

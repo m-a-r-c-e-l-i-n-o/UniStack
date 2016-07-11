@@ -1,84 +1,90 @@
+#!/usr/bin/env node
 process.env['NODE_ENV'] = 'testing'
-var Fs = require('fs-extra')
-var Path = require('path')
-var Karma = require('karma')
-var Nutra = require('nutra')
-var AppConfig = require('./app.config.js')
-var CLI = require('./dist/cli.js').default
 
-function RunKarma () {
-    // setup jspm enviroment
-    var corePath = Path.join(__dirname, 'core')
-    var serverAppPath = Path.join(corePath, 'server', 'test', 'app')
-    var tmpPath = Path.join(corePath, '..', 'tmp')
-    var tmpAppPath = Path.join(tmpPath, 'app')
-    var clientCorePath = Path.join(
-            AppConfig.base.directory,
-            'node_modules/unistack/core'
-        )
-    CLI.validateInstallationDirectory()
-    CLI.setupPackageJSON()
-    CLI.copyBaseDirectoriesToProject()
-    // mimic npm install unistack
-    Fs.renameSync(serverAppPath, tmpAppPath)
-    Fs.copySync(
-        corePath,
-        Path.join(tmpPath, 'app/node_modules/unistack/core')
+var fs = require('fs-extra')
+var path = require('path')
+var karma = require('karma')
+var nutra = require('nutra')
+var config = require('./config.js')
+
+var rootPath = process.cwd()
+var bootstrapPath = path.join(rootPath, 'bootstrap')
+var environmentPath = path.join(rootPath, 'environment')
+var testEnvironmentPath = config.environment.directory
+var testEnvironmentUniStackPath = path.join(
+    testEnvironmentPath,
+    'node_modules/unistack'
+)
+var testEnvironmentBootstrapPath = path.join(
+    testEnvironmentUniStackPath,
+    'bootstrap'
+)
+
+var setupEnviroment = function () {
+    fs.emptyDirSync(testEnvironmentPath)
+    fs.copySync(environmentPath, testEnvironmentPath)
+    fs.copySync(
+        path.join(rootPath, 'config.js'),
+        path.join(testEnvironmentUniStackPath, 'config.js')
     )
-    Fs.renameSync(tmpAppPath, AppConfig.base.directory)
+    fs.copySync(bootstrapPath, testEnvironmentBootstrapPath)
+    return Promise.resolve()
+}
 
-    function tearDown() {
-        Fs.removeSync(Path.join(corePath, 'jspm_packages', 'npm'))
-        Fs.removeSync(Path.join(corePath, 'jspm_packages', 'github'))
-        Fs.emptyDirSync(AppConfig.base.directory)
-    }
+var runNutra = function () {
+    console.log('-Testing server...')
+    return nutra({
+        configFile: './nutra.config.js'
+    })
+    .start()
+    .then(exitCode => {
+        if (exitCode === 0) {
+            console.log('-Done succesfully testing server!')
+        } else {
+            console.log('-Done failing at testing server!')
+        }
+    })
+}
 
+var runEnvironmentKarma = function () {
     return new Promise((resolve, reject) => {
-        console.log('-Testing client now...')
-        var karmaInstance = new Karma.Server({
-            configFile: Path.join(process.cwd(), 'karma.config.js')
+        console.log('-Testing environment client...')
+        var karmaInstance = new karma.Server({
+            configFile: path.join(testEnvironmentBootstrapPath, 'karma.config.js')
         }, function (exitCode) {
             if (exitCode === 0) {
-                console.log('-Done succesfully testing client!')
+                console.log('-Done succesfully testing environment client!')
             } else {
-                console.log('-Done failing at testing client!')
+                console.log('-Done failing at testing environment client!')
             }
-            tearDown()
             resolve(exitCode)
         })
         karmaInstance.start()
     })
 }
 
-function RunNutra () {
-    console.log('-Testing server first. Hang tight, this will take some time...')
-    return Nutra('nutra.config.js')
-        .start()
-        .then(() => {
-            console.log('-Done succesfully testing server!')
-        })
-        .catch(e => {
-            console.log('-Done failing at testing server!')
-            console.log(e)
-        })
+var runEnvironmentNutra = function () {
+    console.log('-Testing environment server...')
+    return nutra({
+        configFile: path.join(testEnvironmentBootstrapPath, 'nutra.config.js'),
+        absolutePaths: true
+    })
+    .start()
+    .then(exitCode => {
+        if (exitCode === 0) {
+            console.log('-Done succesfully testing environment server!')
+        } else {
+            console.log('-Done failing at testing environment server!')
+        }
+    })
 }
 
-// general clean up
-console.log('-Cleaning up test related directories...')
-Fs.ensureDir(Path.join(__dirname, 'tmp'))
-Fs.emptyDirSync(Path.join(__dirname, 'tmp'))
-Fs.ensureDir(AppConfig.base.directory)
-Fs.emptyDirSync(AppConfig.base.directory)
-console.log('-Done succesfully cleaning up test related directories!')
-
-// start tests
-console.log('-Attempting to test server and client...')
-Promise.resolve()
-    .then(RunNutra)
-    .then(RunKarma)
-    .then(exitCode => {
-        console.log('-Done succesfully testing server and client!')
-        process.exit(exitCode)
-    })
-    .catch(e => console.log(e.stack))
+Promise
+.resolve()
+.then(setupEnviroment)
+.then(runNutra) // this must run first — it installs the jspm dependencies
+.then(runEnvironmentKarma)
+.then(runEnvironmentNutra)
+.then(exitCode => console.log('-Done succesfully testing all!'))
+.catch(e => console.log(e.stack))
 

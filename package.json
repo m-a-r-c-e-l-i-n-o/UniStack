@@ -2,9 +2,9 @@
   "name": "unistack",
   "version": "0.0.0",
   "description": "UniStack is a modern javascript framework.",
-  "main": "index.js",
+  "main": "./dist/unistack.js",
   "scripts": {
-    "test": "node ./test.js",
+    "test": "./test.js",
     "build": "babel src --out-dir dist",
     "prepublish": "npm run build"
   },
@@ -16,7 +16,7 @@
     "url": "git+https://github.com/m-a-r-c-e-l-i-n-o/unistack.git"
   },
   "keywords": [
-    "UniStack",
+    "unistack",
     "framework",
     "react",
     "redux",
@@ -31,8 +31,7 @@
   "homepage": "https://github.com/m-a-r-c-e-l-i-n-o/unistack#readme",
   "devDependencies": {
     "babel-cli": "6.10.1",
-    "babel-preset-es2016-node5": "^1.1.2",
-    "mock-stdin": "^0.3.0"
+    "babel-preset-es2016-node5": "^1.1.2"
   },
   "dependencies": {
     "argv": "0.0.2",
@@ -46,9 +45,11 @@
     "karma-jasmine": "^1.0.2",
     "karma-jspm": "github:m-a-r-c-e-l-i-n-o/karma-jspm#ideal",
     "lodash": "^4.13.1",
+    "mock-stdin": "^0.3.0",
     "npmi": "^2.0.1",
-    "nutra": "0.0.5",
-    "nutra-jasmine-coverage-babel-preset": "0.0.1",
-    "nutra-minimal-reporter": "0.0.0"
+    "nutra": "0.0.10",
+    "nutra-jasmine-coverage-babel-preset": "0.0.3",
+    "nutra-jspm": "0.0.2",
+    "nutra-minimal-reporter": "0.0.1"
   }
 }
