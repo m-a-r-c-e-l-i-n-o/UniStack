@@ -361,6 +361,50 @@ describe ('UniStack.setupPackageJSON()', () => {
     })
 })
 
+describe ('UniStack installNPMDependencies()', () => {
+    const unistack = Path.join(__dirname, '../../')
+    const testEnviroment = Config.environment.directory
+    const tmpTestEnvironmentRename = Path.join(unistack, 'tmp/environment')
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 240000
+        // setup a clean enviroment
+        Fs.renameSync(testEnviroment, tmpTestEnvironmentRename)
+        Fs.ensureDirSync(testEnviroment)
+        UniStack.validateInstallationDirectory()
+        UniStack.setupPackageJSON()
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+        // put things back as they were
+        Fs.removeSync(testEnviroment)
+        Fs.renameSync(tmpTestEnvironmentRename, testEnviroment)
+    })
+    it ('should install npm dependencies', (done) => {
+        console.log('Installing test environment NPM dependencies!')
+        UniStack.installNPMDependencies()
+        .then(passed => {
+            const packages = Path.join(testEnviroment, 'node_modules')
+            expect(passed).toBe(true)
+            expect(() => Fs.lstatSync(packages)).not.toThrowError()
+            expect(Fs.readdirSync(packages).length).toBeGreaterThan(0)
+            done()
+        })
+        .catch(e => console.log(e.stack)) // catch errors in previous block
+    })
+    it ('should throw errors if something went wrong', (done) => {
+        const MockUniStack = Object.assign({}, UniStack)
+        // mock error function
+        MockUniStack.handleError = e => {
+            expect(e instanceof Error).toBe(true)
+            done()
+        }
+        MockUniStack.installNPMDependencies('npm invalid install')
+        .catch(e => console.log(e.stack)) // catch errors in previous block
+    })
+})
+
 describe ('UniStack installJSPMDependencies()', () => {
     let originalTimeout
     beforeEach(() => {

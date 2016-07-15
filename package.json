@@ -46,7 +46,6 @@
     "karma-jspm": "github:m-a-r-c-e-l-i-n-o/karma-jspm#ideal",
     "lodash": "^4.13.1",
     "mock-stdin": "^0.3.0",
-    "npmi": "^2.0.1",
     "nutra": "0.0.10",
     "nutra-jasmine-coverage-babel-preset": "0.0.3",
     "nutra-jspm": "0.0.2",

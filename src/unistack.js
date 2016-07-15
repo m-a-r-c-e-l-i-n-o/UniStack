@@ -5,7 +5,7 @@ import _ from 'lodash'
 import Inquirer from 'inquirer'
 import Config from '../config.js'
 import Argv from 'argv'
-import NPMI from 'npmi'
+import ChildProcess from 'child_process'
 
 const UniStack = {
     setupQuestions: [{
@@ -66,30 +66,24 @@ const UniStack = {
             Config.environment.directory
         )
     },
-    installNPMDependencies() {
-        console.log('Installing NPM dependencies!')
+    installNPMDependencies(testCommand) {
+        const _this = this
+        const command = testCommand || "npm install"
+        const options = {
+            cwd: Config.environment.directory
+        }
         return new Promise((resolve, reject) => {
-            const npmiOptions = {
-                path: Config.environment.directory
-            }
-            NPMI(npmiOptions, function (err, result) {
-                if (!err) {
-                    console.log('All done installing NPM dependencies!')
-                    resolve(true)
+            ChildProcess.exec(command, options, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error)
                 } else {
-                    switch(err.code) {
-                        case npmi.LOAD_ERR:
-                            console.log('npm load error')
-                            break;
-                        case npmi.INSTALL_ERR:
-                            console.log('npm install error')
-                            break;
-                        default:
-                            console.log(err.message)
-                    }
-                    reject()
+                    resolve(true)
                 }
             })
+        })
+        .catch(e => {
+            _this.handleError(e, false, _this.throwAsyncError.bind(_this))
+            return false
         })
     },
     installJSPMDependencies() {
