@@ -122,6 +122,49 @@ describe ('UniStack handleError()', () => {
         .not.toThrowError()
         console.warn = consoleWarn
     })
+    it ('should call hook before fatal error when a hook function is provided', (done) => {
+        const spy = jasmine.createSpy('spy')
+        const hook = (error) => {
+            spy(error)
+            return false
+        }
+        const error = new Error('Fatal!')
+        new Promise((revolve, reject) => {
+            reject()
+        })
+        .catch(e => {
+            UniStack.handleError(error, false, hook)
+            expect(spy).toHaveBeenCalledTimes(1)
+            expect(spy).toHaveBeenCalledWith(error)
+            done()
+        })
+    })
+})
+
+describe ('UniStack throwError()', () => {
+    it ('should throw error', () => {
+        expect(() => UniStack.throwError(new Error('Fatal!')))
+        .toThrowError('Fatal!')
+    })
+})
+
+describe ('UniStack throwAsyncError()', () => {
+    it ('should throw asynchronous error', (done) => {
+        const spy = jasmine.createSpy('spy')
+        const error = new Error('Fatal!')
+        const MockUniStack = Object.assign({}, UniStack)
+        MockUniStack.throwError = (error) => {
+            spy(error)
+        }
+        MockUniStack.throwAsyncError(error)
+        setTimeout((() => {
+            return () => {
+                expect(spy).toHaveBeenCalledTimes(1)
+                expect(spy).toHaveBeenCalledWith(error)
+                done()
+            }
+        })(), 1)
+    })
 })
 
 describe ('UniStack validateInstallationDirectory()', () => {

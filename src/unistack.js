@@ -26,8 +26,7 @@ const UniStack = {
                 )
             }
         } catch (e) {
-            console.log(e)
-            this.handleError(e, true, true)
+            this.handleError(e)
         }
     },
     resolveConfig(filename) {
@@ -41,7 +40,7 @@ const UniStack = {
         const configFilename = Path.join(Config.environment.directory, filename)
         try {
             configWrapper = require(configFilename)
-        } catch(e) {
+        } catch (e) {
             throw new Error(
                 Config.errors.invalidConfigPath
                 .replace('{{filename}}', configFilename)
@@ -100,7 +99,7 @@ const UniStack = {
         .resolve()
         .then(jspm.dlLoader)
         .then(() => jspm.install(true, { force: true }))
-        .catch(e => console.log(e))
+        .catch(e => this.handleError(e, false, this.throwAsyncError))
     },
     askSetupQuestions() {
         return Inquirer.prompt(this.setupQuestions)
@@ -129,7 +128,7 @@ const UniStack = {
         return Promise.resolve()
             .then(this.installNPMDependencies.bind(this))
             .then(this.installJSPMDependencies.bind(this))
-            .catch(e => this.handleError(e))
+            .catch(e => this.handleError(e, false, this.throwAsyncError))
     },
     initInteractiveSetup() {
         this.validateInstallationDirectory()
@@ -140,7 +139,7 @@ const UniStack = {
             .then(this.processSetupAnswers)
             .then(this.installJSPMDependencies.bind(this))
             .then(this.installNPMDependencies.bind(this))
-            .catch(e => this.handleError(e))
+            .catch(e => this.handleError(e, false, this.throwAsyncError))
     },
     destroyProject() {
         Fs.emptyDirSync(Config.environment.directory)
@@ -168,12 +167,24 @@ const UniStack = {
     startDevEnvironment(config) {
         console.log('Running', config)
     },
-    handleError(error, warning) {
+    throwError(error) {
+        throw error
+    },
+    throwAsyncError(error) {
+        setTimeout(() => this.throwError(error), 0)
+        return false
+    },
+    handleError(error, warning, hook) {
         if (typeof error === 'string') {
             error = new Error(error)
         }
         if (!warning) {
-            throw error;
+            if (typeof hook === 'function') {
+                if (hook(error) === false) {
+                    return;
+                }
+            }
+            this.throwError(error)
         }
         error.stack = ''
         console.warn(error.message);
