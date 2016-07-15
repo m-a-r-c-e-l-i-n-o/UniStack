@@ -380,6 +380,7 @@ describe ('UniStack installJSPMDependencies()', () => {
             // is no benefit in running jspm.install(true) multiple times.
         // ############################ ATTENTION ############################
 
+        console.log('Installing test environment JSPM dependencies!')
         const unistack = Path.join(__dirname, '../../')
         const environment = Path.join(unistack, '/test/environment')
         const bootstrap = Path.join(environment, '/node_modules/unistack/bootstrap')
