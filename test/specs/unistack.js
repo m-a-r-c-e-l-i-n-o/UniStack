@@ -43,6 +43,14 @@ describe ('UniStack constructor()', () => {
         UniStackMock.constructor(setupCommand)
         expect(UniStackMock.initInteractiveSetup).toHaveBeenCalledTimes(1)
     })
+    it ('should throw fatal errors', () => {
+        const error = new Error('Fatal')
+        UniStackMock.startDevEnvironment = () => {
+            throw error
+        }
+        expect(() => UniStackMock.constructor(baseCommand))
+        .toThrowError('Fatal')
+    })
 })
 
 describe ('UniStack resolveConfig()', () => {
