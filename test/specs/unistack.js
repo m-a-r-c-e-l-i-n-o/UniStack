@@ -228,6 +228,73 @@ describe ('UniStack askSetupQuestions()', () => {
     })
 })
 
+describe ('UniStack initSetup()', () => {
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.validateInstallationDirectory = () => {}
+    MockUniStack.setupPackageJSON = () => {}
+    MockUniStack.copyBaseDirectoriesToProject = () => {}
+    MockUniStack.installJSPMDependencies = () => Promise.resolve()
+    MockUniStack.installNPMDependencies = () => Promise.resolve()
+    it ('should return a promise', () => {
+        const promise = MockUniStack.initSetup(baseCommand)
+        expect(typeof promise.then).toBe('function')
+        promise.then(answers => done())
+    })
+    it ('should validate installation directory.', () => {
+        spyOn(MockUniStack, 'validateInstallationDirectory')
+        MockUniStack.initSetup(baseCommand)
+        expect(MockUniStack.validateInstallationDirectory).toHaveBeenCalledTimes(1)
+    })
+    it ('should setup "package.json".', () => {
+        spyOn(MockUniStack, 'setupPackageJSON')
+        MockUniStack.initSetup(baseCommand)
+        expect(MockUniStack.setupPackageJSON).toHaveBeenCalledTimes(1)
+    })
+    it ('should copy base directories to project directory.', () => {
+        spyOn(MockUniStack, 'copyBaseDirectoriesToProject')
+        MockUniStack.initSetup(baseCommand)
+        expect(MockUniStack.copyBaseDirectoriesToProject).toHaveBeenCalledTimes(1)
+    })
+    it ('should install jspm dependencies.', (done) => {
+        spyOn(MockUniStack, 'installJSPMDependencies')
+        MockUniStack.initSetup(baseCommand)
+        .then(() => {
+            expect(MockUniStack.installJSPMDependencies).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should install npm dependencies.', (done) => {
+        spyOn(MockUniStack, 'installNPMDependencies')
+        MockUniStack.initSetup(baseCommand)
+        .then(() => {
+            expect(MockUniStack.installNPMDependencies).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should throw errors if something went wrong', (done) => {
+        const error = new Error('fatal')
+        const promiseError = () => Promise.resolve().then(() => { throw error })
+        let errors = 2
+        // mock error function
+        MockUniStack.handleError = e => {
+            expect(e).toBe(error)
+            if (--errors === 0) {
+                done()
+            }
+        }
+        MockUniStack.installNPMDependencies = promiseError
+        Promise.resolve()
+        .then(() => MockUniStack.initSetup(baseCommand))
+        .then(() => {
+            MockUniStack.installNPMDependencies = () => Promise.resolve()
+            MockUniStack.installJSPMDependencies = promiseError
+            return Promise.resolve()
+        })
+        .then(() => MockUniStack.initSetup(baseCommand))
+        .catch(e => console.log(e.stack)) // to catch errors from top level blocks
+    })
+})
+
 describe ('UniStack initInteractiveSetup()', () => {
     const MockUniStack = Object.assign({}, UniStack)
     MockUniStack.validateInstallationDirectory = () => {}
@@ -238,7 +305,7 @@ describe ('UniStack initInteractiveSetup()', () => {
     MockUniStack.installJSPMDependencies = () => Promise.resolve()
     MockUniStack.installNPMDependencies = () => Promise.resolve()
     it ('should return a promise', function () {
-        const promise = MockUniStack.askSetupQuestions()
+        const promise = MockUniStack.initInteractiveSetup()
         expect(typeof promise.then).toBe('function')
         promise.then(answers => done())
     })
@@ -257,33 +324,75 @@ describe ('UniStack initInteractiveSetup()', () => {
         MockUniStack.initInteractiveSetup(baseCommand)
         expect(MockUniStack.copyBaseDirectoriesToProject).toHaveBeenCalledTimes(1)
     })
-    it ('should ask setup questions.', () => {
+    it ('should ask setup questions.', (done) => {
         spyOn(MockUniStack, 'askSetupQuestions')
         MockUniStack.initInteractiveSetup(baseCommand)
         .then(() => {
             expect(MockUniStack.askSetupQuestions).toHaveBeenCalledTimes(1)
+            MockUniStack.askSetupQuestions = () => Promise.resolve()
+            done()
         })
     })
-    it ('should process setup answers.', () => {
+    it ('should process setup answers.', (done) => {
         spyOn(MockUniStack, 'processSetupAnswers')
         MockUniStack.initInteractiveSetup(baseCommand)
         .then(() => {
             expect(MockUniStack.processSetupAnswers).toHaveBeenCalledTimes(1)
+            MockUniStack.processSetupAnswers = () => Promise.resolve()
+            done()
         })
     })
-    it ('should install jspm dependencies.', () => {
+    it ('should install jspm dependencies.', (done) => {
         spyOn(MockUniStack, 'installJSPMDependencies')
         MockUniStack.initInteractiveSetup(baseCommand)
         .then(() => {
             expect(MockUniStack.installJSPMDependencies).toHaveBeenCalledTimes(1)
+            MockUniStack.installJSPMDependencies = () => Promise.resolve()
+            done()
         })
     })
-    it ('should install npm dependencies.', () => {
+    it ('should install npm dependencies.', (done) => {
         spyOn(MockUniStack, 'installNPMDependencies')
         MockUniStack.initInteractiveSetup(baseCommand)
         .then(() => {
             expect(MockUniStack.installNPMDependencies).toHaveBeenCalledTimes(1)
+            MockUniStack.installNPMDependencies = () => Promise.resolve()
+            done()
         })
+    })
+    it ('should throw async errors if something went wrong', (done) => {
+        const error = new Error('fatal')
+        const promiseError = () => Promise.resolve().then(() => { throw error })
+        let errors = 4
+        // mock error function
+        MockUniStack.handleError = e => {
+            expect(e).toBe(error)
+            if (--errors === 0) {
+                done()
+            }
+        }
+        MockUniStack.askSetupQuestions = promiseError
+        Promise.resolve()
+        .then(() => MockUniStack.initInteractiveSetup(baseCommand))
+        .then(() => {
+            MockUniStack.askSetupQuestions = () => Promise.resolve()
+            MockUniStack.processSetupAnswers = promiseError
+            return Promise.resolve()
+        })
+        .then(() => MockUniStack.initInteractiveSetup(baseCommand))
+        .then(() => {
+            MockUniStack.processSetupAnswers = () => Promise.resolve()
+            MockUniStack.installJSPMDependencies = promiseError
+            return Promise.resolve()
+        })
+        .then(() => MockUniStack.initInteractiveSetup(baseCommand))
+        .then(() => {
+            MockUniStack.installJSPMDependencies = () => Promise.resolve()
+            MockUniStack.installNPMDependencies = promiseError
+            return Promise.resolve()
+        })
+        .then(() => MockUniStack.initInteractiveSetup(baseCommand))
+        .catch(e => console.log(e.stack)) // to catch errors from top level blocks
     })
 })
 
@@ -404,13 +513,11 @@ describe ('UniStack installNPMDependencies()', () => {
     })
     it ('should throw errors if something went wrong', (done) => {
         const MockUniStack = Object.assign({}, UniStack)
-        // mock error function
-        MockUniStack.handleError = e => {
+        MockUniStack.installNPMDependencies('npm invalid install')
+        .catch(e => {
             expect(e instanceof Error).toBe(true)
             done()
-        }
-        MockUniStack.installNPMDependencies('npm invalid install')
-        .catch(e => console.log(e.stack)) // catch errors in previous block
+        }) // catch errors in previous block
     })
 })
 

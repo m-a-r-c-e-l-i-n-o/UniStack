@@ -67,7 +67,6 @@ const UniStack = {
         )
     },
     installNPMDependencies(testCommand) {
-        const _this = this
         const command = testCommand || "npm install"
         const options = {
             cwd: Config.environment.directory
@@ -81,10 +80,6 @@ const UniStack = {
                 }
             })
         })
-        .catch(e => {
-            _this.handleError(e, false, _this.throwAsyncError.bind(_this))
-            return false
-        })
     },
     installJSPMDependencies() {
         const jspm = require('jspm')
@@ -93,7 +88,6 @@ const UniStack = {
         .resolve()
         .then(jspm.dlLoader)
         .then(() => jspm.install(true, { force: true }))
-        .catch(e => this.handleError(e, false, this.throwAsyncError))
     },
     askSetupQuestions() {
         return Inquirer.prompt(this.setupQuestions)
