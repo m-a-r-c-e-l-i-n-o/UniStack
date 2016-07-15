@@ -176,30 +176,27 @@ describe ('UniStack throwAsyncError()', () => {
 })
 
 describe ('UniStack validateInstallationDirectory()', () => {
-    it ('should throw error when environment directory is not empty', () => {
+    const unistack = Path.join(__dirname, '../../')
+    const enviroment = Path.join(unistack, 'environment')
+    const testEnviroment = Config.environment.directory
+    const tmpTestEnvironmentRename = Path.join(unistack, 'tmp/environment')
+    beforeEach(() => {
         // setup a clean enviroment
-        const enviroment = Path.join(__dirname, '../../environment')
-        const tempEnvironmentRename = Config.environment.directory + '-tmp'
-        Fs.renameSync(Config.environment.directory, tempEnvironmentRename)
-        Fs.copySync(enviroment, Config.environment.directory)
-        // run expectations
+        Fs.renameSync(testEnviroment, tmpTestEnvironmentRename)
+    })
+    afterEach(() => {
+        // put things back as they were
+        Fs.removeSync(testEnviroment)
+        Fs.renameSync(tmpTestEnvironmentRename, testEnviroment)
+    })
+    it ('should throw error when environment directory is not empty', () => {
+        Fs.copySync(enviroment, testEnviroment)
         expect(() => UniStack.validateInstallationDirectory())
         .toThrowError(Config.errors.installationDirectoryIsPopulated)
-        // put things back as they were
-        Fs.removeSync(Config.environment.directory)
-        Fs.renameSync(tempEnvironmentRename, Config.environment.directory)
     })
-    it ('should remain silent when environment directory is not empty', () => {
-        // setup a clean enviroment
-        const enviroment = Path.join(__dirname, '../../environment')
-        const tempEnvironmentRename = Config.environment.directory + '-tmp'
-        Fs.renameSync(Config.environment.directory, tempEnvironmentRename)
-        Fs.ensureDirSync(Config.environment.directory)
-        // run expectations
+    it ('should remain silent when environment directory is empty', () => {
+        Fs.ensureDirSync(testEnviroment)
         expect(() => UniStack.validateInstallationDirectory()).not.toThrowError()
-        // put things back as they were
-        Fs.removeSync(Config.environment.directory)
-        Fs.renameSync(tempEnvironmentRename, Config.environment.directory)
     })
 })
 
@@ -282,15 +279,22 @@ describe ('UniStack initInteractiveSetup()', () => {
 })
 
 describe ('UniStack copyBaseDirectoriesToProject()', () => {
-    it ('should copy base directories and files to project directory.', () => {
+    const unistack = Path.join(__dirname, '../../')
+    const testEnviroment = Config.environment.directory
+    const tmpTestEnvironmentRename = Path.join(unistack, 'tmp/environment')
+    beforeEach(() => {
         // setup a clean enviroment
-        const enviroment = Path.join(__dirname, '../../environment')
-        const tempEnvironmentRename = Config.environment.directory + '-tmp'
-        Fs.renameSync(Config.environment.directory, tempEnvironmentRename)
-        Fs.ensureDirSync(Config.environment.directory)
+        Fs.renameSync(testEnviroment, tmpTestEnvironmentRename)
+        Fs.ensureDirSync(testEnviroment)
         UniStack.validateInstallationDirectory()
+    })
+    afterEach(() => {
+        // put things back as they were
+        Fs.removeSync(testEnviroment)
+        Fs.renameSync(tmpTestEnvironmentRename, testEnviroment)
+    })
+    it ('should copy base directories and files to project directory.', () => {
         UniStack.copyBaseDirectoriesToProject()
-        // run expectations
         const rootPath = Config.environment.directory
         const filenames = [
             Path.join(rootPath, 'src/client/index.js'),
@@ -312,28 +316,28 @@ describe ('UniStack copyBaseDirectoriesToProject()', () => {
             //console.log('filename', filename)
             expect(() => Fs.lstatSync(filename)).not.toThrowError()
         })
-        // put things back as they were
-        Fs.removeSync(Config.environment.directory)
-        Fs.renameSync(tempEnvironmentRename, Config.environment.directory)
     })
 })
 
 describe ('UniStack destroyProject()', () => {
-    it ('should empty entire app directory.', () => {
+    const unistack = Path.join(__dirname, '../../')
+    const testEnviroment = Config.environment.directory
+    const tmpTestEnvironmentRename = Path.join(unistack, 'tmp/environment')
+    beforeEach(() => {
         // setup a clean enviroment
-        const enviroment = Path.join(__dirname, '../../environment')
-        const tempEnvironmentRename = Config.environment.directory + '-tmp'
-        Fs.renameSync(Config.environment.directory, tempEnvironmentRename)
-        Fs.ensureDirSync(Config.environment.directory)
+        Fs.renameSync(testEnviroment, tmpTestEnvironmentRename)
+        Fs.ensureDirSync(testEnviroment)
         UniStack.validateInstallationDirectory()
         UniStack.copyBaseDirectoriesToProject()
-        // run expectations
-        UniStack.copyBaseDirectoriesToProject()
-        UniStack.destroyProject()
-        expect(Fs.readdirSync(Config.environment.directory).length).toBe(0)
+    })
+    afterEach(() => {
         // put things back as they were
-        Fs.removeSync(Config.environment.directory)
-        Fs.renameSync(tempEnvironmentRename, Config.environment.directory)
+        Fs.removeSync(testEnviroment)
+        Fs.renameSync(tmpTestEnvironmentRename, testEnviroment)
+    })
+    it ('should empty entire app directory.', () => {
+        UniStack.destroyProject()
+        expect(Fs.readdirSync(testEnviroment).length).toBe(0)
     })
 })
 
@@ -358,8 +362,14 @@ describe ('UniStack.setupPackageJSON()', () => {
 })
 
 describe ('UniStack installJSPMDependencies()', () => {
-    const defaultTimeoutInterval = jasmine.DEFAULT_TIMEOUT_INTERVAL
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 60000
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 240000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
     it ('should install jspm dependencies.', (done) => {
 
         // ############################ ATTENTION ############################
@@ -370,35 +380,30 @@ describe ('UniStack installJSPMDependencies()', () => {
             // is no benefit in running jspm.install(true) multiple times.
         // ############################ ATTENTION ############################
 
-        try {
-            const unistack = Path.join(__dirname, '../../')
-            const environment = Path.join(unistack, '/test/environment')
-            const bootstrap = Path.join(environment, '/node_modules/unistack/bootstrap')
-            UniStack.setupPackageJSON()
-            UniStack.installJSPMDependencies()
-            .then(() => {
-                const packages = Path.join(bootstrap, 'jspm_packages')
-                expect(() => Fs.lstatSync(Path.join(packages, 'npm')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'github')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system.js')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system.src.js')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system.js.map')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.js')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.src.js')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.js.map')))
-                .not.toThrowError()
-                jasmine.DEFAULT_TIMEOUT_INTERVAL = defaultTimeoutInterval
-                done()
-            }).catch(e => { console.log(e.stack) })
-        } catch (e) {
-            console.error(e.stack)
-        }
+        const unistack = Path.join(__dirname, '../../')
+        const environment = Path.join(unistack, '/test/environment')
+        const bootstrap = Path.join(environment, '/node_modules/unistack/bootstrap')
+        UniStack.setupPackageJSON()
+        UniStack.installJSPMDependencies()
+        .then(() => {
+            const packages = Path.join(bootstrap, 'jspm_packages')
+            expect(() => Fs.lstatSync(Path.join(packages, 'npm')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'github')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system.js')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system.src.js')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system.js.map')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.js')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.src.js')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.js.map')))
+            .not.toThrowError()
+            done()
+        }).catch(e => { console.log(e.stack) }) // catch errors in previous block
     })
 })

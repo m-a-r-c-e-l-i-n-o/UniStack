@@ -8,6 +8,7 @@ var nutra = require('nutra')
 var config = require('./config.js')
 
 var rootPath = process.cwd()
+var tmpDirectory = path.join(rootPath, 'tmp')
 var bootstrapPath = path.join(rootPath, 'bootstrap')
 var environmentPath = path.join(rootPath, 'environment')
 var testEnvironmentPath = config.environment.directory
@@ -21,7 +22,10 @@ var testEnvironmentBootstrapPath = path.join(
 )
 
 var setupEnviroment = function () {
+    fs.emptyDirSync(tmpDirectory)
+    fs.ensureDirSync(tmpDirectory)
     fs.emptyDirSync(testEnvironmentPath)
+    fs.ensureDirSync(testEnvironmentPath)
     fs.copySync(environmentPath, testEnvironmentPath)
     fs.copySync(
         path.join(rootPath, 'config.js'),
