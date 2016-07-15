@@ -142,20 +142,16 @@ const UniStack = {
         if (!Array.isArray(processArgs)) {
             processArgs = []
         }
-        try {
-            Argv.option({
-                name: 'setup',
-                short: 's',
-                type: 'boolean',
-                description: 'Triggers interactive setup',
-                example: "'unistack --setup'"
-            })
-            const commands = Argv.run(processArgs);
-            return {
-                setup: commands.options.setup
-            }
-        } catch (e) {
-            throw new Error(Config.errors.invalidCLIArguments)
+        Argv.option({
+            name: 'setup',
+            short: 's',
+            type: 'boolean',
+            description: 'Triggers interactive setup',
+            example: "'unistack --setup'"
+        })
+        const commands = Argv.run(processArgs)
+        return {
+            setup: commands.options.setup
         }
     },
     startDevEnvironment(config) {

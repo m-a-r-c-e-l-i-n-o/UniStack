@@ -101,6 +101,15 @@ describe ('UniStack parseArguments()', () => {
             setup: undefined
         })
     })
+    it ('should return an object with falsy arguments when arguments are invalid', (done) => {
+        const processExit = process.exit
+        process.exit = () => {
+            process.exit = processExit
+            done()
+        }
+        expect(() => UniStack.parseArguments(baseCommand.concat('--invalid')))
+        .toThrowError()
+    })
 })
 
 describe ('UniStack handleError()', () => {
@@ -452,3 +461,4 @@ describe ('UniStack installJSPMDependencies()', () => {
         }).catch(e => { console.log(e.stack) }) // catch errors in previous block
     })
 })
+
