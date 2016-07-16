@@ -13,8 +13,7 @@ module.exports = function( config ) {
         coverageOptions: {
             dir : './test',
             reporters: [
-                { type: 'html', subdir: 'coverage' },
-                { type: 'lcovonly', subdir: 'coverage', file: 'lcov.info' }
+                { type: 'lcovonly', subdir: '.', file: 'lcov.info' }
             ]
         }
     })

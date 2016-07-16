@@ -12,3 +12,6 @@ test/environment
 dist
 coverage
 tmp
+
+# Coverage Files
+lcov.info

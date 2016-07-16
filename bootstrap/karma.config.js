@@ -37,9 +37,10 @@ module.exports = function(config) {
         },
         preprocessors: preprocessors,
         coverageReporter: {
-            type : 'html',
+            type : 'lcovonly',
             dir : path.join(process.cwd(), 'bootstrap/client/test'),
-            subdir: 'coverage'
+            subdir: '.',
+            file: 'lcov.info'
         },
         reporters: [ 'progress', 'jspm' ],
         port: 9876,

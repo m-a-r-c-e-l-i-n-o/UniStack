@@ -83,12 +83,36 @@ var runEnvironmentNutra = function () {
     })
 }
 
+var generateUnifiedCoverage = function () {
+    var escapeRegex = function (value) {
+        return value.replace( /[\-\[\]{}()*+?.,\\\^$|#\s]/g, "\\$&" );
+    }
+    // get coverage reports
+    var unistack = fs.readFileSync('./test/lcov.info', 'utf8')
+    var envClient = fs.readFileSync('./bootstrap/client/test/lcov.info', 'utf8')
+    var envServer = fs.readFileSync('./bootstrap/server/test/lcov.info', 'utf8')
+    // stipulate the paths that need to be changed
+    var basePath = escapeRegex(process.cwd() + '/')
+    var testEnvPath = escapeRegex('test/environment/')
+    var testEnvUniStackPath = escapeRegex('test/environment/node_modules/unistack/')
+    var envPath = 'environment/'
+    // make regexes out of the paths
+    var regexOne = new RegExp(basePath + '|' + testEnvUniStackPath, 'g')
+    var regexTwo = new RegExp(testEnvPath, 'g')
+    // replace the paths accordingly
+    unistack = unistack.replace(regexOne, '').replace(regexTwo, envPath)
+    envClient = envClient.replace(regexOne, '').replace(regexTwo, envPath)
+    envServer = envServer.replace(regexOne, '').replace(regexTwo, envPath)
+    // write the final report
+    fs.writeFileSync('./lcov.info', unistack + envClient + envServer)
+}
+
 Promise
 .resolve()
 .then(setupEnviroment)
 .then(runNutra) // this must run first — it installs the jspm dependencies
 .then(runEnvironmentKarma)
 .then(runEnvironmentNutra)
+.then(generateUnifiedCoverage)
 .then(exitCode => console.log('-Done succesfully testing all!'))
 .catch(e => console.log(e.stack))
-
