@@ -115,4 +115,7 @@ Promise
 .then(runEnvironmentNutra)
 .then(generateUnifiedCoverage)
 .then(exitCode => console.log('-Done succesfully testing all!'))
-.catch(e => console.log(e.stack))
+.catch(e => {
+    console.log(e.stack)
+    process.exit(1)
+})

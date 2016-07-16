@@ -1,0 +1,7 @@
+language: node_js
+before_install: if [[ `npm -v` != 3* ]]; then npm i -g npm@3; fi
+node_js:
+ - "6.0.0"
+ - "6.1.0"
+script: "npm run-script test"
+after_success: "cat ./lcov.info | ./node_modules/coveralls/bin/coveralls.js"

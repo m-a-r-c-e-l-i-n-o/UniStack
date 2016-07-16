@@ -16,7 +16,7 @@ module.exports = function(config) {
         plugins: [
             'karma-jspm',
             'karma-jasmine',
-            'karma-chrome-launcher'
+            'karma-phantomjs-launcher'
         ],
         jspm: {
             stripExtension: false,
@@ -48,7 +48,7 @@ module.exports = function(config) {
         debug: false,
         logLevel: config.LOG_INFO,
         autoWatch: false,
-        browsers: [ 'Chrome' ],
+        browsers: ['PhantomJS'],
         singleRun: true,
         concurrency: Infinity
     })
