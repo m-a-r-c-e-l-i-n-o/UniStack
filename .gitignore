@@ -15,3 +15,6 @@ tmp
 
 # Coverage Files
 lcov.info
+
+# Access Keys
+.saucelabs

@@ -3,6 +3,11 @@ process.env['NODE_ENV'] = 'testing'
 
 var fs = require('fs-extra')
 var path = require('path')
+
+var sauceLabs = fs.readFileSync('./.saucelabs', 'utf8')
+process.env.SAUCE_USERNAME = sauceLabs.split('\n')[0].split('=')[1].trim()
+process.env.SAUCE_ACCESS_KEY = sauceLabs.split('\n')[1].split('=')[1].trim()
+
 var karma = require('karma')
 var nutra = require('nutra')
 var config = require('./config.js')
@@ -114,7 +119,10 @@ Promise
 .then(runEnvironmentKarma)
 .then(runEnvironmentNutra)
 .then(generateUnifiedCoverage)
-.then(exitCode => console.log('-Done succesfully testing all!'))
+.then(exitCode => {
+    console.log('-Done succesfully testing all!')
+    process.exit(exitCode)
+})
 .catch(e => {
     console.log(e.stack)
     process.exit(1)

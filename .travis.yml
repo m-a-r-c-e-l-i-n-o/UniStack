@@ -1,7 +1,11 @@
 language: node_js
-before_install: if [[ `npm -v` != 3* ]]; then npm i -g npm@3; fi
+before_install: if [[ `npm -v` != 3* ]]; then npm i -g npm@3; fi && npm run-script
+  decrypt-saucelabs
 node_js:
- - "6.0.0"
- - "6.1.0"
-script: "npm run-script test"
-after_success: "cat ./lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+- 6.0.0
+- 6.1.0
+script: npm run-script test
+after_success: cat ./lcov.info | ./node_modules/coveralls/bin/coveralls.js
+env:
+  global:
+    secure: YfewN0ioNPqo3We/4QpWj/WQ881T59Hg/vDb0Af0cWCEGfRVvLoiWfZw0HHJaybS6icPl1AEBQfmkbJCUUE0ogvyBHHAHrehKD3WiIUHk8DCxYgUGHDdcrAUUlJ8qVb1sbYEs8eIGo4+hDvsNinvnMv4E4putxQy2gYWNo3R6TuJ9fD7BjjJIqp1uMwxn5tt+gN0crU09+mbYIKr6ENx+ws6bzo2AecYHHjKpBtbCDknMojqYJC7sKQgI2bDGtq9hjtSXv6x10PaGbiWjOnx4xkuQz5uji7pHG9GMWy8CF54yHXQRsg1pxGB9UKNyMmuag5FbIZoAgDxG9ZGcN0oaDr19wxgTz2QEURLykl/dyaDAP7xenbKaxQpyzWz4wPr03UBlRrZ5BWmazHrp8wpjLRBQ8yhzfXbutgj7Dj3rL/E0gn98nTT/S8Wf7N7VkP+aGmAh0KiJs5eEcv2+7P3Qr1/ijegIwGvfaZ4sP2+TFo+g3KyeQKs21eGqhd6eenHIIAejafWo1Ls8Ml1SneyQ52kSLGeVGjVx5/pbpDok1n34UPqNwoRVuYXk2fh/tca6garR8j2G7IzNJW1AgBwMyZG6t/zn9G/U9Ug8wDAbv4+WqEyAxV5bMDe6VgX0dMFtzUTujMdCzgr3FkE3narCahQOBsxLqhoOcdZ62xFkSo=
