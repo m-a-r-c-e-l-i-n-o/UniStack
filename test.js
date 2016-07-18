@@ -8,6 +8,12 @@ var sauceLabs = fs.readFileSync('./.saucelabs', 'utf8')
 process.env.SAUCE_USERNAME = sauceLabs.split('\n')[0].split('=')[1].trim()
 process.env.SAUCE_ACCESS_KEY = sauceLabs.split('\n')[1].split('=')[1].trim()
 
+if (process.argv[2] === '--quick') {
+    console.log('-Doing only a quick run!')
+    console.log('-Skipping environment tests and package installations...')
+    process.env.QUICK_TEST_RUN = true
+}
+
 var karma = require('karma')
 var nutra = require('nutra')
 var config = require('./config.js')
@@ -56,36 +62,44 @@ var runNutra = function () {
 }
 
 var runEnvironmentKarma = function () {
-    return new Promise((resolve, reject) => {
-        console.log('-Testing environment client...')
-        var karmaInstance = new karma.Server({
-            configFile: path.join(testEnvironmentBootstrapPath, 'karma.config.js')
-        }, function (exitCode) {
-            if (exitCode === 0) {
-                console.log('-Done succesfully testing environment client!')
-            } else {
-                console.log('-Done failing at testing environment client!')
-            }
-            resolve(exitCode)
+    if (process.env.QUICK_TEST_RUN) {
+        return Promise.resolve()
+    } else {
+        return new Promise((resolve, reject) => {
+            console.log('-Testing environment client...')
+            var karmaInstance = new karma.Server({
+                configFile: path.join(testEnvironmentBootstrapPath, 'karma.config.js')
+            }, function (exitCode) {
+                if (exitCode === 0) {
+                    console.log('-Done succesfully testing environment client!')
+                } else {
+                    console.log('-Done failing at testing environment client!')
+                }
+                resolve(exitCode)
+            })
+            karmaInstance.start()
         })
-        karmaInstance.start()
-    })
+    }
 }
 
 var runEnvironmentNutra = function () {
-    console.log('-Testing environment server...')
-    return nutra({
-        configFile: path.join(testEnvironmentBootstrapPath, 'nutra.config.js'),
-        absolutePaths: true
-    })
-    .start()
-    .then(exitCode => {
-        if (exitCode === 0) {
-            console.log('-Done succesfully testing environment server!')
-        } else {
-            console.log('-Done failing at testing environment server!')
-        }
-    })
+    if (process.env.QUICK_TEST_RUN) {
+        return Promise.resolve()
+    } else {
+        console.log('-Testing environment server...')
+        return nutra({
+            configFile: path.join(testEnvironmentBootstrapPath, 'nutra.config.js'),
+            absolutePaths: true
+        })
+        .start()
+        .then(exitCode => {
+            if (exitCode === 0) {
+                console.log('-Done succesfully testing environment server!')
+            } else {
+                console.log('-Done failing at testing environment server!')
+            }
+        })
+    }
 }
 
 var generateUnifiedCoverage = function () {

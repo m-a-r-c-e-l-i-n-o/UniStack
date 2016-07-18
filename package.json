@@ -5,6 +5,7 @@
   "main": "./dist/unistack.js",
   "scripts": {
     "test": "./test.js",
+    "test-quick": "./test.js --quick",
     "encrypt-saucelabs": "gpg -c .saucelabs",
     "decrypt-saucelabs": "echo $super_secret_password | gpg --passphrase-fd 0 .saucelabs.gpg",
     "build": "babel src --out-dir dist",
