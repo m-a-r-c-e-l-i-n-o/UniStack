@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-process.env['NODE_ENV'] = 'testing'
+process.env['BLUEBIRD_WARNINGS'] = 0
+process.env['NODE_ENV'] = 'development'
 
 var fs = require('fs-extra')
 var path = require('path')
@@ -58,6 +59,7 @@ var runNutra = function () {
         } else {
             console.log('-Done failing at testing server!')
         }
+        return exitCode
     })
 }
 
@@ -98,6 +100,7 @@ var runEnvironmentNutra = function () {
             } else {
                 console.log('-Done failing at testing environment server!')
             }
+            return exitCode
         })
     }
 }
@@ -134,10 +137,14 @@ Promise
 .then(runEnvironmentNutra)
 .then(generateUnifiedCoverage)
 .then(exitCode => {
-    console.log('-Done succesfully testing all!')
-    process.exit(exitCode)
+    console.log('-Done testing all!', exitCode)
+    setTimeout(function () {
+        process.exit(exitCode)
+    }, 0)
 })
 .catch(e => {
     console.log(e.stack)
-    process.exit(1)
+    setTimeout(function () {
+        process.exit(1)
+    }, 0)
 })

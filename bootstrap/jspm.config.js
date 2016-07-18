@@ -112,14 +112,9 @@ SystemJS.config({
   transpiler: "plugin-babel",
   packages: {
     "environment": {
-      "main": "node_modules/unistack/bootstrap/client/index.js",
       "map": {
-        "ENV": {
-          "~production": "node_modules/unistack/bootstrap/config.js"
-        },
-        "unistack": {
-          "~production": "node_modules/unistack/bootstrap/"
-        }
+        "ENV": "node_modules/unistack/bootstrap/config.js",
+        "unistack": "node_modules/unistack/bootstrap/"
       },
       "meta": {
         "*.js": {

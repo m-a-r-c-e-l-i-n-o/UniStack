@@ -120,5 +120,9 @@ const server = app.listen( ENV.serverPort, () => {
         console.log( 'unistack:app-server-loaded' )
     }
 } )
+const exportObj = {
+    server: server,
+    environment: process.env.NODE_ENV
+}
 
-export default server
+export default exportObj

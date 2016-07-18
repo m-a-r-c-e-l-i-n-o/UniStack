@@ -570,3 +570,112 @@ if (!process.env.QUICK_TEST_RUN) {
         })
     })
 }
+
+describe ('UniStack bundle()', () => {
+    const basePath = Config.environment.directory
+
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.system = MockUniStack.getSystemConstant()
+
+    const bootstrapPath = Path.join(MockUniStack.system.unistackPath, 'bootstrap')
+    const entryFile = Path.join(bootstrapPath, 'server', 'index.js')
+    const outputFile = Path.join(bootstrapPath, 'server', 'bundle.js')
+
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should assert that entry and output path arguments are required', () => {
+        expect(() => MockUniStack.bundle()).toThrowError()
+        expect(() => MockUniStack.bundle({ entryFile }))
+        .toThrowError('Entry and output paths are required.')
+        expect(() => MockUniStack.bundle({ outputFile }))
+        .toThrowError('Entry and output paths are required.')
+        expect(() => MockUniStack.bundle({ entryFile, outputFile }))
+        .not.toThrowError()
+    })
+    it ('should return an bundler object with a build method', () => {
+        expect(MockUniStack.bundle({ entryFile, outputFile }).build)
+        .toEqual(jasmine.any(Function))
+    })
+})
+
+describe ('UniStack bundleForNode()', () => {
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.system = MockUniStack.getSystemConstant()
+
+    const basePath = Config.environment.directory
+    const unistackPath = MockUniStack.system.unistackPath
+    const environmentPath = MockUniStack.system.environmentPath
+    const bootstrapPath = Path.join(unistackPath, 'bootstrap')
+
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should build a node development bundle', (done) => {
+        const outputFile = Path.join(bootstrapPath, 'server', 'server.bundle.js')
+        MockUniStack.bundleForNode().then(bundler => {
+            expect(() => Fs.lstatSync(outputFile)).not.toThrowError()
+            const response = require(outputFile).default
+            expect(response.environment).toBe('development')
+            response.server.close(() => {
+                delete require.cache[outputFile]
+                Fs.removeSync(outputFile)
+                Fs.removeSync(outputFile + '.map')
+                done()
+            })
+        })
+        .catch(e => console.error(e.stack))
+    })
+    it ('should build a node production bundle', (done) => {
+        const outputFile = Path.join(environmentPath, 'dist', 'server.bundle.js')
+        MockUniStack.bundleForNode(true).then(bundler => {
+            expect(() => Fs.lstatSync(outputFile)).not.toThrowError()
+            const response = require(outputFile).default
+            expect(response.environment).toBe('production')
+            response.server.close(() => {
+                delete require.cache[outputFile]
+                Fs.removeSync(outputFile)
+                Fs.removeSync(outputFile + '.map')
+                done()
+            })
+        })
+        .catch(e => console.error(e.stack))
+    })
+})
+
+describe ('UniStack bundleForBrowser()', () => {
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.system = MockUniStack.getSystemConstant()
+
+    const basePath = Config.environment.directory
+    const environmentPath = MockUniStack.system.environmentPath
+
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should build a browser bundle', (done) => {
+        const outputFile = Path.join(environmentPath, 'dist', 'client.bundle.js')
+        MockUniStack.bundleForBrowser().then(bundler => {
+            expect(() => Fs.lstatSync(outputFile)).not.toThrowError()
+            Fs.removeSync(outputFile)
+            Fs.removeSync(outputFile + '.map')
+            done()
+        })
+        .catch(e => console.error(e.stack))
+    })
+})
