@@ -571,6 +571,30 @@ if (!process.env.QUICK_TEST_RUN) {
     })
 }
 
+describe ('UniStack getSystemConstant()', () => {
+    const environmentPath = Config.environment.directory
+    const unistackPath = Path.join(environmentPath, 'node_modules', 'unistack')
+    it ('should return an object with an environment path property', () => {
+        expect(UniStack.getSystemConstant())
+        .toEqual(jasmine.objectContaining({ environmentPath }))
+    })
+    it ('should return an object with an unistack path property', () => {
+        expect(UniStack.getSystemConstant())
+        .toEqual(jasmine.objectContaining({ unistackPath }))
+    })
+    it ('should return an immutable object', () => {
+        const system = UniStack.getSystemConstant()
+        const unistackPath = system.unistackPath
+        expect(() => system.unistackPath = 'something else')
+        .toThrowError(TypeError)
+    })
+    it ('should return an non-extendable object', () => {
+        const system = UniStack.getSystemConstant()
+        expect(() => system.hello = 'world')
+        .toThrowError(TypeError)
+    })
+})
+
 describe ('UniStack bundle()', () => {
     const basePath = Config.environment.directory
 

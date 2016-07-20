@@ -33,10 +33,10 @@ const UniStack = {
     },
     getSystemConstant() {
         const basePath = Config.environment.directory
-        return {
+        return Object.freeze({
             environmentPath: basePath,
             unistackPath: Path.join(basePath, 'node_modules', 'unistack')
-        }
+        })
     },
     resolveConfig(filename) {
         if (!filename) {
