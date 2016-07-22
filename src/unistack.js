@@ -96,7 +96,7 @@ const UniStack = {
         return Promise
         .resolve()
         .then(jspm.dlLoader)
-        .then(() => jspm.install(true, { force: true }))
+        .then(() => jspm.install(true))
     },
     askSetupQuestions() {
         return Inquirer.prompt(this.setupQuestions)

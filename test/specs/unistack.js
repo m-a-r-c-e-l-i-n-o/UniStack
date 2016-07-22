@@ -521,55 +521,55 @@ if (!process.env.QUICK_TEST_RUN) {
             }) // catch errors in previous block
         })
     })
-
-    describe ('UniStack installJSPMDependencies()', () => {
-        let originalTimeout
-        beforeEach(() => {
-            originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-            jasmine.DEFAULT_TIMEOUT_INTERVAL = 240000
-        })
-        afterEach(() => {
-            jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
-        })
-        it ('should install jspm dependencies.', (done) => {
-
-            // ############################ ATTENTION ############################
-                // This it block has to remain as the first spec on this block.
-                // This is, in part, do to the programatic jspm.install(true)
-                // being a one time deal per process, and also helps with
-                // performance, as jspm.install(true) takes time and there
-                // is no benefit in running jspm.install(true) multiple times.
-            // ############################ ATTENTION ############################
-
-            console.log('Installing test environment JSPM dependencies!')
-            const unistack = Path.join(__dirname, '../../')
-            const environment = Path.join(unistack, '/test/environment')
-            const bootstrap = Path.join(environment, '/node_modules/unistack/bootstrap')
-            UniStack.setupPackageJSON()
-            UniStack.installJSPMDependencies()
-            .then(() => {
-                const packages = Path.join(bootstrap, 'jspm_packages')
-                expect(() => Fs.lstatSync(Path.join(packages, 'npm')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'github')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system.js')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system.src.js')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system.js.map')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.js')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.src.js')))
-                .not.toThrowError()
-                expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.js.map')))
-                .not.toThrowError()
-                done()
-            }).catch(e => { console.log(e.stack) }) // catch errors in previous block
-        })
-    })
 }
+
+describe ('UniStack installJSPMDependencies()', () => {
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 240000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should install jspm dependencies.', (done) => {
+
+        // ############################ ATTENTION ############################
+            // This it block has to remain as the first spec on this block.
+            // This is, in part, do to the programatic jspm.install(true)
+            // being a one time deal per process, and also helps with
+            // performance, as jspm.install(true) takes time and there
+            // is no benefit in running jspm.install(true) multiple times.
+        // ############################ ATTENTION ############################
+
+        console.log('Installing test environment JSPM dependencies!')
+        const unistack = Path.join(__dirname, '../../')
+        const environment = Path.join(unistack, '/test/environment')
+        const bootstrap = Path.join(environment, '/node_modules/unistack/bootstrap')
+        UniStack.setupPackageJSON()
+        UniStack.installJSPMDependencies()
+        .then(() => {
+            const packages = Path.join(bootstrap, 'jspm_packages')
+            expect(() => Fs.lstatSync(Path.join(packages, 'npm')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'github')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system.js')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system.src.js')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system.js.map')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.js')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.src.js')))
+            .not.toThrowError()
+            expect(() => Fs.lstatSync(Path.join(packages, 'system-polyfills.js.map')))
+            .not.toThrowError()
+            done()
+        }).catch(e => { console.log(e.stack) }) // catch errors in previous block
+    })
+})
 
 describe ('UniStack getSystemConstant()', () => {
     const environmentPath = Config.environment.directory
