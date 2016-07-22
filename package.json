@@ -52,8 +52,8 @@
     "karma-sauce-launcher": "^1.0.0",
     "lodash": "^4.13.1",
     "mock-stdin": "^0.3.0",
-    "nutra": "0.0.10",
-    "nutra-jasmine-coverage-babel-preset": "0.0.3",
+    "nutra": "0.0.12",
+    "nutra-jasmine-coverage-babel-preset": "0.0.4",
     "nutra-jspm": "0.0.2",
     "nutra-minimal-reporter": "0.0.1"
   }

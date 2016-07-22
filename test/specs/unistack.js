@@ -210,7 +210,7 @@ describe ('UniStack validateInstallationDirectory()', () => {
 })
 
 describe ('UniStack askSetupQuestions()', () => {
-    it ('should return a promise', function () {
+    it ('should return a promise', function (done) {
         const questions = UniStack.setupQuestions
         UniStack.setupQuestions = []
         const prompt = UniStack.askSetupQuestions()
@@ -235,7 +235,7 @@ describe ('UniStack initSetup()', () => {
     MockUniStack.copyBaseDirectoriesToProject = () => {}
     MockUniStack.installJSPMDependencies = () => Promise.resolve()
     MockUniStack.installNPMDependencies = () => Promise.resolve()
-    it ('should return a promise', () => {
+    it ('should return a promise', (done) => {
         const promise = MockUniStack.initSetup(baseCommand)
         expect(typeof promise.then).toBe('function')
         promise.then(answers => done())
@@ -304,7 +304,7 @@ describe ('UniStack initInteractiveSetup()', () => {
     MockUniStack.processSetupAnswers = () => Promise.resolve()
     MockUniStack.installJSPMDependencies = () => Promise.resolve()
     MockUniStack.installNPMDependencies = () => Promise.resolve()
-    it ('should return a promise', function () {
+    it ('should return a promise', function (done) {
         const promise = MockUniStack.initInteractiveSetup()
         expect(typeof promise.then).toBe('function')
         promise.then(answers => done())
