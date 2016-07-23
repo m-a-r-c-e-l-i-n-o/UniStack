@@ -7,6 +7,7 @@ import Config from '../config.js'
 import Argv from 'argv'
 import ChildProcess from 'child_process'
 import Bundler from 'jspm-dev-builder'
+import { Gaze } from 'gaze'
 
 const UniStack = {
     setupQuestions: [{
@@ -125,7 +126,9 @@ const UniStack = {
         return Promise.resolve()
             .then(this.installNPMDependencies.bind(this))
             .then(this.installJSPMDependencies.bind(this))
-            .catch(e => this.handleError(e, false, this.throwAsyncError))
+            .catch(
+                e => this.handleError(e, false, this.throwAsyncError.bind(this))
+            )
     },
     initInteractiveSetup() {
         this.validateInstallationDirectory()
@@ -136,7 +139,9 @@ const UniStack = {
             .then(this.processSetupAnswers)
             .then(this.installJSPMDependencies.bind(this))
             .then(this.installNPMDependencies.bind(this))
-            .catch(e => this.handleError(e, false, this.throwAsyncError))
+            .catch(
+                e => this.handleError(e, false, this.throwAsyncError.bind(this))
+            )
     },
     destroyProject() {
         Fs.emptyDirSync(Config.environment.directory)
@@ -157,6 +162,31 @@ const UniStack = {
             setup: commands.options.setup
         }
     },
+    watchFiles(opts) {
+        const gaze = new Gaze([].concat(opts.patterns))
+        gaze.on('added', filename => gaze.add(filename))
+        gaze.on('changed', _.throttle(opts.callback, 3000, { trailing: true }))
+        return new Promise((resolve, reject) => {
+            gaze.on('ready', () => resolve(gaze))
+        })
+    },
+    getFileWatchOptions(bundle) {
+        const directory = (bundle.node ? 'server' : 'client')
+        const srcPath = Path.join(this.system.environmentPath, 'src')
+        const bootstrapPath = Path.join(this.system.unistackPath, 'bootstrap')
+        const patterns = [ // should be replaced by an actual dependency tree
+            Path.join(srcPath, '{shared/*,shared/**}.js'),
+            Path.join(srcPath, `{${directory}/*,${directory}/!(test)/**}.js`),
+            Path.join(bootstrapPath, `{${directory}/!(${directory}.bundle),${directory}/!(test)/**}.js`)
+        ]
+        const bundler = bundle.instance
+        return {
+            patterns: patterns,
+            callback: (filename) => {
+                bundler.build(filename)
+            }
+        }
+    },
     bundle(options = {}) {
         const bootstrapPath = Path.join(this.system.unistackPath, 'bootstrap')
         const configFile = Path.join(bootstrapPath, 'jspm.config.js')
@@ -166,7 +196,6 @@ const UniStack = {
         if (typeof entryFile !== 'string' || typeof outputFile !== 'string') {
             throw new Error('Entry and output paths are required.')
         }
-
         delete options.entryFile
         delete options.outputFile
 
@@ -187,28 +216,45 @@ const UniStack = {
             Path.join(environmentPath, 'dist', 'server.bundle.js') :
             Path.join(bootstrapPath, 'server', 'server.bundle.js')
         )
-        const bundle = this.bundle({
+        const options = {
             sfx: true,
             node: true,
             production: production,
             sourceMaps: true,
             entryFile: Path.join(bootstrapPath, 'server', 'index.js'),
             outputFile: outputFile
+        }
+        const bundler = this.bundle(options)
+        return bundler.build().then(output => {
+            options.instance = bundler
+            return options
         })
-        return bundle.build()
     },
     bundleForBrowser() {
         const environmentPath = this.system.environmentPath
         const bootstrapPath = Path.join(this.system.unistackPath, 'bootstrap')
-        const bundle = this.bundle({
+        const options = {
             sourceMaps: true,
             entryFile: Path.join(bootstrapPath, 'client', 'index.js'),
             outputFile: Path.join(environmentPath, 'dist', 'client.bundle.js')
+        }
+        const bundler = this.bundle(options)
+        return bundler.build().then(output => {
+            options.instance = bundler
+            return options
         })
-        return bundle.build()
     },
     startDevEnvironment(config) {
         return Promise.resolve()
+        /*
+        .then(this.bundleForNode.bind(this))
+        .then(this.getFileWatchOptions.bind(this))
+        .then(this.watchFiles.bind(this))
+        .then(this.bundleForBrowser.bind(this))
+        .then(this.getFileWatchOptions.bind(this))
+        .then(this.watchFiles.bind(this))
+        .catch(e => this.handleError(e, false, this.throwAsyncError.bind(this)))
+        */
     },
     throwError(error) {
         throw error

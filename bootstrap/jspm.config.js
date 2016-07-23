@@ -5,6 +5,7 @@ SystemJS.config({
     "environment/": ""
   },
   browserConfig: {
+    trace: true,
     "baseURL": "/"
   },
   devConfig: {
@@ -114,7 +115,7 @@ SystemJS.config({
     "environment": {
       "map": {
         "ENV": "node_modules/unistack/bootstrap/config.js",
-        "unistack": "node_modules/unistack/bootstrap/"
+        "unistack": "node_modules/unistack/bootstrap"
       },
       "meta": {
         "*.js": {

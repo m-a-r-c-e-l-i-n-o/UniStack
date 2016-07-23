@@ -645,9 +645,25 @@ describe ('UniStack bundleForNode()', () => {
     afterEach(() => {
         jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
     })
+    it ('should return stats about the bundle and the bundle instance', (done) => {
+        const stats = {
+            sfx: true,
+            node: true,
+            production: true,
+            sourceMaps: true
+        }
+        MockUniStack.bundleForNode(true).then(bundle => {
+            const bundleInstance = bundle.instance
+            delete bundle.instance
+            expect(bundle).toEqual(stats)
+            expect(bundleInstance.build).toEqual(jasmine.any(Function))
+            done()
+        })
+        .catch(e => console.error(e.stack))
+    })
     it ('should build a node development bundle', (done) => {
         const outputFile = Path.join(bootstrapPath, 'server', 'server.bundle.js')
-        MockUniStack.bundleForNode().then(bundler => {
+        MockUniStack.bundleForNode().then(stats => {
             expect(() => Fs.lstatSync(outputFile)).not.toThrowError()
             const response = require(outputFile).default
             expect(response.environment).toBe('development')
@@ -662,7 +678,7 @@ describe ('UniStack bundleForNode()', () => {
     })
     it ('should build a node production bundle', (done) => {
         const outputFile = Path.join(environmentPath, 'dist', 'server.bundle.js')
-        MockUniStack.bundleForNode(true).then(bundler => {
+        MockUniStack.bundleForNode(true).then(stats => {
             expect(() => Fs.lstatSync(outputFile)).not.toThrowError()
             const response = require(outputFile).default
             expect(response.environment).toBe('production')
@@ -692,6 +708,19 @@ describe ('UniStack bundleForBrowser()', () => {
     afterEach(() => {
         jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
     })
+    it ('should return stats about the bundle and the bundle instance', (done) => {
+        const stats = {
+            sourceMaps: true
+        }
+        MockUniStack.bundleForBrowser().then(bundle => {
+            const bundleInstance = bundle.instance
+            delete bundle.instance
+            expect(bundle).toEqual(stats)
+            expect(bundleInstance.build).toEqual(jasmine.any(Function))
+            done()
+        })
+        .catch(e => console.error(e.stack))
+    })
     it ('should build a browser bundle', (done) => {
         const outputFile = Path.join(environmentPath, 'dist', 'client.bundle.js')
         MockUniStack.bundleForBrowser().then(bundler => {
@@ -699,6 +728,87 @@ describe ('UniStack bundleForBrowser()', () => {
             Fs.removeSync(outputFile)
             Fs.removeSync(outputFile + '.map')
             done()
+        })
+        .catch(e => console.error(e.stack))
+    })
+})
+
+describe ('UniStack getFileWatchOptions()', () => {
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.system = MockUniStack.getSystemConstant()
+    const srcPath = Path.join(MockUniStack.system.environmentPath, 'src')
+    const bootstrapPath = Path.join(MockUniStack.system.unistackPath, 'bootstrap')
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should return a update bundle callback', (done) => {
+        const bundleMock = { instance: { build: done } }
+        const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
+        watchOptions.callback()
+    })
+    it ('should return patterns for server files', () => {
+        const bundleMock = { node: true }
+        const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
+        expect(watchOptions.patterns).toEqual([
+            Path.join(srcPath, '{shared/*,shared/**}.js'),
+            Path.join(srcPath, `{server/*,server/!(test)/**}.js`),
+            Path.join(bootstrapPath, `{server/!(server.bundle),server/!(test)/**}.js`)
+        ])
+    })
+    it ('should return patterns for client files', () => {
+        const bundleMock = {}
+        const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
+        expect(watchOptions.patterns).toEqual([
+            Path.join(srcPath, '{shared/*,shared/**}.js'),
+            Path.join(srcPath, `{client/*,client/!(test)/**}.js`),
+            Path.join(bootstrapPath, `{client/!(client.bundle),client/!(test)/**}.js`)
+        ])
+    })
+})
+
+describe ('UniStack watchFiles()', () => {
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should return and fulfil a promise', (done) => {
+        const options = {
+            patterns: Path.join(__dirname, '..', 'mocks', 'file-watch-test.js'),
+            callback: () => {}
+        }
+        UniStack.watchFiles(options).then(gaze => {
+            gaze.close()
+            done()
+        })
+        .catch(e => console.error(e.stack))
+    })
+    it ('should call callback when file changes', (done) => {
+        const testPath = Path.join(__dirname, '..')
+        const tmpPath = Path.join(testPath, '..')
+        const tmpFile = Path.join(tmpPath, 'test', 'file-watch-test.js')
+        let globalGaze
+        const options = {
+            patterns: tmpFile,
+            callback: filename => {
+                expect(filename).toBe(tmpFile)
+                Fs.removeSync(tmpFile)
+                globalGaze.close()
+                done()
+            }
+        }
+        Fs.copySync(Path.join(testPath, 'mocks', 'file-watch-test.js'), tmpFile)
+        UniStack.watchFiles(options).then(gaze => {
+            globalGaze = gaze
+            Fs.appendFileSync(tmpFile, 'Hello World')
         })
         .catch(e => console.error(e.stack))
     })
