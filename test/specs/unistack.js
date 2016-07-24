@@ -813,3 +813,33 @@ describe ('UniStack watchFiles()', () => {
         .catch(e => console.error(e.stack))
     })
 })
+
+describe ('UniStack runNodeBundle()', () => {
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.system = MockUniStack.getSystemConstant()
+
+    const bootstrapPath = Path.join(MockUniStack.system.unistackPath, 'bootstrap')
+
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should require the node bundle', (done) => {
+        const outputFile = Path.join(bootstrapPath, 'server', 'server.bundle.js')
+        MockUniStack.bundleForNode()
+        .then(MockUniStack.runNodeBundle.bind(MockUniStack))
+        .then(response => {
+            response.server.close(() => {
+                delete require.cache[outputFile]
+                Fs.removeSync(outputFile)
+                Fs.removeSync(outputFile + '.map')
+                done()
+            })
+        })
+        .catch(e => console.error(e.stack))
+    })
+})

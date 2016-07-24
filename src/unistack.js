@@ -244,6 +244,18 @@ const UniStack = {
             return options
         })
     },
+    runNodeBundle() {
+        const unistackPath = this.system.unistackPath
+        const serverPath =  Path.join(unistackPath, 'bootstrap', 'server')
+        const serverBundle = Path.join(serverPath, 'server.bundle.js')
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(require(serverBundle).default)
+            } catch (e) {
+                reject(e)
+            }
+        })
+    },
     startDevEnvironment(config) {
         return Promise.resolve()
         /*

@@ -1,7 +1,3 @@
-if ( process.env.NODE_ENV === 'development' ) {
-    console.log( 'unistack:importing-modules' )
-}
-
 import 'source-map-support/register.js#?ENV|development'
 import * as ENV from 'ENV'
 import * as fs from 'fs'
@@ -16,110 +12,63 @@ import { addTodoOptimistic } from 'environment/src/shared/actions/index.js'
 import { routes } from 'environment/src/shared/routes.js'
 import Layout from 'environment/src/server/components/layout.js'
 
-if ( process.env.NODE_ENV === 'development' ) {
-    console.log( 'unistack:running-app-code' )
-}
-
 let app = new Koa()
 let title = 'Hello World!'
 
-if ( process.env.NODE_ENV === 'development' ) {
-    app.use( async ( ctx, next ) =>
-        ( ctx.path.indexOf( '/testing-client.js' ) === 0 ?
-            await KoaSend( ctx, ctx.path ) :
-            next()
-        )
-    )
-    app.use( async ( ctx, next ) =>
-        ( ctx.path.indexOf( '/jspm_packages' ) === 0 ?
-            await KoaSend( ctx, ctx.path ) :
-            next()
-        )
-    )
-    app.use( async ( ctx, next ) =>
-        ( ctx.path.indexOf( '/jspm.browser.js' ) === 0 ?
-            await KoaSend( ctx, ctx.path ) :
-            next()
-        )
-    )
-    app.use( async ( ctx, next ) =>
-        ( ctx.path.indexOf( '/jspm.config.js' ) === 0 ?
-            await KoaSend( ctx, ctx.path ) :
-            next()
-        )
-    )
-    app.use( async ( ctx, next ) =>
-        ( ctx.path.indexOf( '/src/client/' ) === 0 ?
-            await KoaSend( ctx, ctx.path ) :
-            next()
-        )
-    )
-    app.use( async ( ctx, next ) =>
-        ( ctx.path.indexOf( '/src/shared/' ) === 0 ?
-            await KoaSend( ctx, ctx.path ) :
-            next()
-        )
-    )
-    app.use( async ( ctx, next ) =>
-        ( ctx.path.indexOf( '/env.client.dev.js' ) === 0 ?
-            await KoaSend( ctx, ctx.path ) :
-            next()
-        )
-    )
+function MatchRoute(path) {
+    return new Promise((resolve, reject) => {
+        match({ routes, location: path }, (error, redirect, renderProps) => {
+            resolve({ error, redirect, renderProps })
+        })
+    })
 }
-app.use( async ( ctx, next ) =>
-    ( ctx.path.indexOf( '/favicon.ico' ) === 0 ?
-        await KoaSend( ctx, ctx.path ) :
-        next()
-    )
-)
-app.use( async ( ctx, next ) => {
 
-    var componentProps
+app.use( async (ctx, next) => {
+    let componentProps
+    const response = await MatchRoute(ctx.path)
 
-    match( { routes, location: ctx.path }, ( error, redirect, renderProps ) => {
-        if ( error ) {
-            ctx.status = 500
-            componentProps = error.message // CHANGE THIS TO A COMPONENT!!!
-        } else if ( redirect ) {
-            ctx.status = 302
-            ctx.redirect(redirect.pathname + redirect.search)
-        } else if ( renderProps ) {
-            ctx.status = 200
-            if ( renderProps
-                .components[ renderProps.components.length - 1 ]
-                .name === '_404' ) ctx.status = 404
-
-            componentProps = renderProps
+    if (response.error) {
+        ctx.status = 500
+        componentProps = response.error.message // CHANGE THIS TO A COMPONENT!!!
+    } else if (response.redirect) {
+        ctx.status = 302
+        ctx.redirect(response.redirect.pathname + response.redirect.search)
+    } else if (response.renderProps) {
+        ctx.status = 200
+        const lastComponent = response.renderProps.components.length - 1
+        if (response.renderProps.components[lastComponent].name === '_404') {
+            const found = await KoaSend(ctx, ctx.path, {
+                root: ENV.environment.directory
+            })
+            if (found) {
+               return next()
+            }
+            ctx.status = 404
         }
-        let store = createSharedStore();
-        store.dispatch( addTodoOptimistic( 'Go eat!' ) )
-        let componentHTML = renderToString(
-            <Provider store={store}>
-                <RouterContext {...componentProps} />
-            </Provider>
-        )
-        let layoutHTML =
-            '<!DOCTYPE html public="UniStackJS">' +
-            renderToStaticMarkup(
-                <Layout
-                    title={title}
-                    componentHTML={componentHTML}
-                    initialState={store.getState()}
-                >
-                </Layout>
-            )
-        ctx.body = layoutHTML;
-    } )
-} )
-if ( process.env.NODE_ENV === 'development' ) {
-    console.log( 'unistack:app-server-loading' )
-}
-const server = app.listen( ENV.serverPort, () => {
-    if ( process.env.NODE_ENV === 'development' ) {
-        console.log( 'unistack:app-server-loaded' )
+        componentProps = response.renderProps
     }
+
+    let store = createSharedStore();
+    store.dispatch( addTodoOptimistic( 'Go eat!' ) )
+    let componentHTML = renderToString(
+        <Provider store={store}>
+            <RouterContext {...componentProps} />
+        </Provider>
+    )
+    let layoutHTML =
+        '<!DOCTYPE html public="UniStackJS">' +
+        renderToStaticMarkup(
+            <Layout
+                title={title}
+                componentHTML={componentHTML}
+                initialState={store.getState()}
+            >
+            </Layout>
+        )
+    ctx.body = layoutHTML;
+    next()
 } )
+const server = app.listen(ENV.serverPort, () => { /* server is ready */ })
 const exportObj = {
     server: server,
     environment: process.env.NODE_ENV
