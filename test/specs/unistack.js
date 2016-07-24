@@ -747,7 +747,8 @@ describe ('UniStack getFileWatchOptions()', () => {
         jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
     })
     it ('should return a update bundle callback', (done) => {
-        const bundleMock = { instance: { build: done } }
+        MockUniStack.server = { close: done }
+        const bundleMock = { instance: { build: () => {} } }
         const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
         watchOptions.callback()
     })
@@ -841,5 +842,88 @@ describe ('UniStack runNodeBundle()', () => {
             })
         })
         .catch(e => console.error(e.stack))
+    })
+})
+
+describe ('UniStack startDevEnvironment()', () => {
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.system = MockUniStack.getSystemConstant()
+
+    const bootstrapPath = Path.join(MockUniStack.system.unistackPath, 'bootstrap')
+
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should require the node bundle', (done) => {
+        const outputFile = Path.join(bootstrapPath, 'server', 'server.bundle.js')
+        MockUniStack.startDevEnvironment()
+        .then(response => {
+            response.server.close(() => {
+                delete require.cache[outputFile]
+                Fs.removeSync(outputFile)
+                Fs.removeSync(outputFile + '.map')
+                done()
+            })
+        })
+        .catch(e => console.error(e.stack))
+    })
+})
+
+describe ('UniStack startDevEnvironment()', () => {
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.bundleForNode = () => Promise.resolve()
+    MockUniStack.bundleForBrowser = () => Promise.resolve()
+    MockUniStack.getFileWatchOptions = () => Promise.resolve()
+    MockUniStack.watchFiles = () => Promise.resolve()
+    MockUniStack.runNodeBundle = () => Promise.resolve()
+    it ('should return a promise', (done) => {
+        const promise = MockUniStack.startDevEnvironment()
+        expect(typeof promise.then).toBe('function')
+        promise.then(done)
+    })
+    it ('should create a bundle for the node environment', (done) => {
+        spyOn(MockUniStack, 'bundleForNode')
+        MockUniStack.startDevEnvironment().then(() => {
+            expect(MockUniStack.bundleForNode).toHaveBeenCalledTimes(1)
+            done()
+        })
+        .catch(e => console.log(e.stack))
+    })
+    it ('should create a bundle for the browser environment', (done) => {
+        spyOn(MockUniStack, 'bundleForBrowser')
+        MockUniStack.startDevEnvironment().then(() => {
+            expect(MockUniStack.bundleForBrowser).toHaveBeenCalledTimes(1)
+            done()
+        })
+        .catch(e => console.log(e.stack))
+    })
+    it ('should return correct configuration for watching files', (done) => {
+        spyOn(MockUniStack, 'getFileWatchOptions')
+        MockUniStack.startDevEnvironment().then(() => {
+            expect(MockUniStack.getFileWatchOptions).toHaveBeenCalledTimes(2)
+            done()
+        })
+        .catch(e => console.log(e.stack))
+    })
+    it ('should watch relevant bundle files for changes', (done) => {
+        spyOn(MockUniStack, 'watchFiles')
+        MockUniStack.startDevEnvironment().then(() => {
+            expect(MockUniStack.watchFiles).toHaveBeenCalledTimes(2)
+            done()
+        })
+        .catch(e => console.log(e.stack))
+    })
+    it ('should require node bundle', (done) => {
+        spyOn(MockUniStack, 'runNodeBundle')
+        MockUniStack.startDevEnvironment().then(() => {
+            expect(MockUniStack.runNodeBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+        .catch(e => console.log(e.stack))
     })
 })

@@ -21,6 +21,7 @@ const UniStack = {
         try {
             const args = this.parseArguments(processArgs)
             this.system = this.getSystemConstant()
+            this.server = null
             if (args.setup) {
                 this.initInteractiveSetup()
             } else {
@@ -183,7 +184,9 @@ const UniStack = {
         return {
             patterns: patterns,
             callback: (filename) => {
-                bundler.build(filename)
+                this.server.close(() => {
+                    bundler.build(filename)
+                })
             }
         }
     },
@@ -250,7 +253,9 @@ const UniStack = {
         const serverBundle = Path.join(serverPath, 'server.bundle.js')
         return new Promise((resolve, reject) => {
             try {
-                resolve(require(serverBundle).default)
+                const bundle = require(serverBundle).default
+                this.server = bundle.server
+                resolve(bundle)
             } catch (e) {
                 reject(e)
             }
@@ -258,15 +263,14 @@ const UniStack = {
     },
     startDevEnvironment(config) {
         return Promise.resolve()
-        /*
         .then(this.bundleForNode.bind(this))
         .then(this.getFileWatchOptions.bind(this))
         .then(this.watchFiles.bind(this))
         .then(this.bundleForBrowser.bind(this))
         .then(this.getFileWatchOptions.bind(this))
         .then(this.watchFiles.bind(this))
+        .then(this.runNodeBundle.bind(this))
         .catch(e => this.handleError(e, false, this.throwAsyncError.bind(this)))
-        */
     },
     throwError(error) {
         throw error
