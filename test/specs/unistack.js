@@ -1,8 +1,11 @@
 import Fs from 'fs-extra'
 import Path from 'path'
+import IOClient from 'socket.io-client'
+import { createServer as CreateServer } from 'http'
 import UniStack from '../../src/unistack.js'
 import Config from '../../config.js'
 import BDDStdin from '../lib/bdd-stdin.js'
+import serverDestroy from 'server-destroy'
 
 const baseCommand = ['node', 'unistack']
 const setupCommand = ['node', 'unistack', '--setup']
@@ -31,12 +34,12 @@ describe ('UniStack', () => {
 
 describe ('UniStack constructor()', () => {
     const UniStackMock = Object.assign({}, UniStack)
-    UniStackMock.startDevEnvironment = () => {}
+    UniStackMock.initDevEnvironment = () => {}
     UniStackMock.initInteractiveSetup = () => {}
     it ('should start dev enviroment if no flags are present', () => {
-        spyOn(UniStackMock, 'startDevEnvironment')
+        spyOn(UniStackMock, 'initDevEnvironment')
         UniStackMock.constructor(baseCommand)
-        expect(UniStackMock.startDevEnvironment).toHaveBeenCalledTimes(1)
+        expect(UniStackMock.initDevEnvironment).toHaveBeenCalledTimes(1)
     })
     it ('should initiate setup if "setup" flag is present', () => {
         spyOn(UniStackMock, 'initInteractiveSetup')
@@ -45,7 +48,7 @@ describe ('UniStack constructor()', () => {
     })
     it ('should throw fatal errors', () => {
         const error = new Error('Fatal')
-        UniStackMock.startDevEnvironment = () => {
+        UniStackMock.initDevEnvironment = () => {
             throw error
         }
         expect(() => UniStackMock.constructor(baseCommand))
@@ -480,6 +483,7 @@ describe ('UniStack.setupPackageJSON()', () => {
 })
 
 if (!process.env.QUICK_TEST_RUN) {
+
     describe ('UniStack installNPMDependencies()', () => {
         const unistack = Path.join(__dirname, '../../')
         const testEnviroment = Config.environment.directory
@@ -522,7 +526,6 @@ if (!process.env.QUICK_TEST_RUN) {
         })
     })
 }
-
 describe ('UniStack installJSPMDependencies()', () => {
     let originalTimeout
     beforeEach(() => {
@@ -747,7 +750,7 @@ describe ('UniStack getFileWatchOptions()', () => {
         jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
     })
     it ('should return a update bundle callback', (done) => {
-        MockUniStack.server = { close: done }
+        MockUniStack.environmentServer = { close: done }
         const bundleMock = { instance: { build: () => {} } }
         const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
         watchOptions.callback()
@@ -769,6 +772,27 @@ describe ('UniStack getFileWatchOptions()', () => {
             Path.join(srcPath, `{client/*,client/!(test)/**}.js`),
             Path.join(bootstrapPath, `{client/!(client.bundle),client/!(test)/**}.js`)
         ])
+    })
+})
+
+describe ('UniStack initSocket()', () => {
+    it ('should return server and io instances', (done) => {
+        UniStack.initReloader()
+        .then(response => {
+            expect(typeof response.server).toBe('object')
+            expect(typeof response.io).toBe('object')
+            response.server.destroy(done)
+        })
+        .catch(e => console.error(e.stack))
+    })
+    it ('should start server with the config defined port', (done) => {
+        UniStack.initReloader()
+        .then(response => {
+            const server = response.server
+            expect(server.address().port).toBe(Config.server.reloaderPort)
+            server.destroy(done)
+        })
+        .catch(e => console.error(e.stack))
     })
 })
 
@@ -813,6 +837,43 @@ describe ('UniStack watchFiles()', () => {
         })
         .catch(e => console.error(e.stack))
     })
+    it ('should emit a "change" event to the client', (done) => {
+        const testPath = Path.join(__dirname, '..')
+        const tmpPath = Path.join(testPath, '..')
+        const tmpFile = Path.join(tmpPath, 'test', 'file-watch-test.js')
+        Fs.copySync(Path.join(testPath, 'mocks', 'file-watch-test.js'), tmpFile)
+        const options = {
+            patterns: tmpFile,
+            callback: () => {}
+        }
+        let globalGaze, clientSocket
+        UniStack.initReloader()
+        .then(response => {
+            return new Promise((resolve, reject) => {
+                response.io.on('connection', socket => {
+                    resolve()
+                })
+                const host = 'http://localhost:' + Config.server.reloaderPort
+                clientSocket = IOClient.connect(host, {
+                    'reconnection delay' : 0,
+                    'reopen delay' : 0,
+                    'force new connection' : true
+                })
+                clientSocket.once('echo', filename => {
+                    expect(filename).toBe(tmpFile)
+                    Fs.removeSync(tmpFile)
+                    globalGaze.close()
+                    response.server.destroy(done)
+                })
+            })
+        })
+        .then(UniStack.watchFiles.bind(UniStack, options))
+        .then(gaze => {
+            globalGaze = gaze
+            Fs.appendFileSync(tmpFile, 'Hello World')
+        })
+        .catch(e => console.error(e.stack))
+    })
 })
 
 describe ('UniStack runNodeBundle()', () => {
@@ -845,50 +906,30 @@ describe ('UniStack runNodeBundle()', () => {
     })
 })
 
-describe ('UniStack startDevEnvironment()', () => {
+describe ('UniStack initDevEnvironment()', () => {
     const MockUniStack = Object.assign({}, UniStack)
-    MockUniStack.system = MockUniStack.getSystemConstant()
-
-    const bootstrapPath = Path.join(MockUniStack.system.unistackPath, 'bootstrap')
-
-    let originalTimeout
-    beforeEach(() => {
-        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
-    })
-    afterEach(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
-    })
-    it ('should require the node bundle', (done) => {
-        const outputFile = Path.join(bootstrapPath, 'server', 'server.bundle.js')
-        MockUniStack.startDevEnvironment()
-        .then(response => {
-            response.server.close(() => {
-                delete require.cache[outputFile]
-                Fs.removeSync(outputFile)
-                Fs.removeSync(outputFile + '.map')
-                done()
-            })
-        })
-        .catch(e => console.error(e.stack))
-    })
-})
-
-describe ('UniStack startDevEnvironment()', () => {
-    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.initReloader = () => Promise.resolve()
     MockUniStack.bundleForNode = () => Promise.resolve()
     MockUniStack.bundleForBrowser = () => Promise.resolve()
     MockUniStack.getFileWatchOptions = () => Promise.resolve()
     MockUniStack.watchFiles = () => Promise.resolve()
     MockUniStack.runNodeBundle = () => Promise.resolve()
     it ('should return a promise', (done) => {
-        const promise = MockUniStack.startDevEnvironment()
+        const promise = MockUniStack.initDevEnvironment()
         expect(typeof promise.then).toBe('function')
         promise.then(done)
     })
+    it ('should initialize reloader', (done) => {
+        spyOn(MockUniStack, 'initReloader')
+        MockUniStack.initDevEnvironment().then(() => {
+            expect(MockUniStack.initReloader).toHaveBeenCalledTimes(1)
+            done()
+        })
+        .catch(e => console.log(e.stack))
+    })
     it ('should create a bundle for the node environment', (done) => {
         spyOn(MockUniStack, 'bundleForNode')
-        MockUniStack.startDevEnvironment().then(() => {
+        MockUniStack.initDevEnvironment().then(() => {
             expect(MockUniStack.bundleForNode).toHaveBeenCalledTimes(1)
             done()
         })
@@ -896,7 +937,7 @@ describe ('UniStack startDevEnvironment()', () => {
     })
     it ('should create a bundle for the browser environment', (done) => {
         spyOn(MockUniStack, 'bundleForBrowser')
-        MockUniStack.startDevEnvironment().then(() => {
+        MockUniStack.initDevEnvironment().then(() => {
             expect(MockUniStack.bundleForBrowser).toHaveBeenCalledTimes(1)
             done()
         })
@@ -904,7 +945,7 @@ describe ('UniStack startDevEnvironment()', () => {
     })
     it ('should return correct configuration for watching files', (done) => {
         spyOn(MockUniStack, 'getFileWatchOptions')
-        MockUniStack.startDevEnvironment().then(() => {
+        MockUniStack.initDevEnvironment().then(() => {
             expect(MockUniStack.getFileWatchOptions).toHaveBeenCalledTimes(2)
             done()
         })
@@ -912,7 +953,7 @@ describe ('UniStack startDevEnvironment()', () => {
     })
     it ('should watch relevant bundle files for changes', (done) => {
         spyOn(MockUniStack, 'watchFiles')
-        MockUniStack.startDevEnvironment().then(() => {
+        MockUniStack.initDevEnvironment().then(() => {
             expect(MockUniStack.watchFiles).toHaveBeenCalledTimes(2)
             done()
         })
@@ -920,7 +961,7 @@ describe ('UniStack startDevEnvironment()', () => {
     })
     it ('should require node bundle', (done) => {
         spyOn(MockUniStack, 'runNodeBundle')
-        MockUniStack.startDevEnvironment().then(() => {
+        MockUniStack.initDevEnvironment().then(() => {
             expect(MockUniStack.runNodeBundle).toHaveBeenCalledTimes(1)
             done()
         })

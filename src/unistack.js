@@ -8,6 +8,9 @@ import Argv from 'argv'
 import ChildProcess from 'child_process'
 import Bundler from 'jspm-dev-builder'
 import { Gaze } from 'gaze'
+import IO from 'socket.io'
+import ServerDestroy from 'server-destroy'
+import { createServer as CreateServer } from 'http'
 
 const UniStack = {
     setupQuestions: [{
@@ -21,11 +24,11 @@ const UniStack = {
         try {
             const args = this.parseArguments(processArgs)
             this.system = this.getSystemConstant()
-            this.server = null
+            this.environmentServer = null
             if (args.setup) {
                 this.initInteractiveSetup()
             } else {
-                this.startDevEnvironment(
+                this.initDevEnvironment(
                     this.resolveConfig(args.config)
                 )
             }
@@ -163,10 +166,26 @@ const UniStack = {
             setup: commands.options.setup
         }
     },
+    initReloader() {
+        const server = CreateServer()
+        const io = IO(server)
+        return new Promise((resolve, reject) => {
+            const reloader = this.reloader = { server, io }
+            server.listen(Config.server.reloaderPort, () => {
+                resolve(reloader)
+            })
+            ServerDestroy(server)
+        })
+    },
     watchFiles(opts) {
         const gaze = new Gaze([].concat(opts.patterns))
         gaze.on('added', filename => gaze.add(filename))
-        gaze.on('changed', _.throttle(opts.callback, 3000, { trailing: true }))
+        gaze.on('changed', _.throttle(filename => {
+            if (this.reloader && this.reloader.io) {
+                this.reloader.io.emit('echo', filename)
+            }
+            opts.callback(filename)
+        }, 3000, { trailing: true }))
         return new Promise((resolve, reject) => {
             gaze.on('ready', () => resolve(gaze))
         })
@@ -184,7 +203,7 @@ const UniStack = {
         return {
             patterns: patterns,
             callback: (filename) => {
-                this.server.close(() => {
+                this.environmentServer.close(() => {
                     bundler.build(filename)
                 })
             }
@@ -254,15 +273,16 @@ const UniStack = {
         return new Promise((resolve, reject) => {
             try {
                 const bundle = require(serverBundle).default
-                this.server = bundle.server
+                this.environmentServer = bundle.server
                 resolve(bundle)
             } catch (e) {
                 reject(e)
             }
         })
     },
-    startDevEnvironment(config) {
+    initDevEnvironment(config) {
         return Promise.resolve()
+        .then(this.initReloader.bind(this))
         .then(this.bundleForNode.bind(this))
         .then(this.getFileWatchOptions.bind(this))
         .then(this.watchFiles.bind(this))

@@ -1,4 +1,4 @@
-import ENV from 'ENV'
+import * as ENV from 'ENV'
 import HotReloader from 'systemjs-hot-reloader/hot-reloader.js' // Hot Reloader
 
 let hotReloader = new HotReloader( '//' + ENV.hostName + ':' + ENV.reloaderPort )
@@ -8,12 +8,16 @@ hotReloader.socket.on( 'connect', () => {
     console.log( 'Socket connected!' )
 } )
 
+hotReloader.socket.on( 'hello', () => {
+    console.log( 'Hey it works!' )
+} )
+
 hotReloader.on( 'change', _name => name = _name )
 
 hotReloader.on( 'moduleRecordNotFound', _ => {
 
     if ( name.endsWith( '.css' ) ) {
-    // It's a CSS file, build the new <link> tag.
+        // It's a CSS file, build the new <link> tag.
         let newLink = document.createElement( 'link' )
         newLink.type = 'text/css'
         newLink.rel = 'stylesheet'

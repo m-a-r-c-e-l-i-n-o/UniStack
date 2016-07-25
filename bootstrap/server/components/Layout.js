@@ -21,7 +21,6 @@ const Layout = ( props ) => {
                 { ( layout.head ?
                     ( Array.isArray( layout.head.props.children ) ?
                         layout.head.props.children.map( ( tag, i ) => {
-                            console.log('tag.props', tag.props)
                             return <tag.type key={i} {...unescapeHTML(tag.props)} />
                         }
                         ) :
@@ -32,15 +31,11 @@ const Layout = ( props ) => {
                     ) : null
                 ) }
                 { ( process.env.NODE_ENV === 'development' ?
-                    <script src="/jspm_packages/system.js" />
+                    <script src="/node_modules/unistack/bootstrap/jspm_packages/system.src.js" />
                     : null
                 ) }
                 { ( process.env.NODE_ENV === 'development' ?
-                    <script src="/jspm.browser.js" />
-                    : null
-                ) }
-                { ( process.env.NODE_ENV === 'development' ?
-                    <script src="/jspm.config.js" />
+                    <script src="/node_modules/unistack/bootstrap/jspm.config.js" />
                     : null
                 ) }
             </head>
@@ -69,14 +64,14 @@ const Layout = ( props ) => {
                     : null
                 ) }
                 { ( process.env.NODE_ENV === 'development' ?
-                    <script src="/src/client/bundle.js" /> :
+                    <script src="/dist/client.bundle.js" /> :
                     <script src="/js/bundle.js" />
                 ) }
                 { ( process.env.NODE_ENV === 'development' ?
                     <script
                         dangerouslySetInnerHTML={
                             {
-                                __html: 'SystemJS.import( "unistack" )'
+                                __html: 'System.trace = true; System.import("node_modules/unistack/bootstrap/client/index.js")'
                             }
                         }
                     />

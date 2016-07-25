@@ -2,8 +2,16 @@ var Path = require('path')
 
 var Config = {
     environment: {},
-    errors: {}
+    errors: {},
+    server: {},
+    hostName: 'localhost',
+    serverPort: 8080,
+    reloaderPort: 5776
 }
+
+Config.server.hostName = 'localhost'
+Config.server.serverPort = 8080
+Config.server.reloaderPort = 5776
 
 Config.environment.directory = (
     typeof process === 'object' && process.env['NODE_ENV'] === 'development'
