@@ -864,7 +864,7 @@ describe ('UniStack watchFiles()', () => {
                     'reopen delay' : 0,
                     'force new connection' : true
                 })
-                clientSocket.once('echo', filename => {
+                clientSocket.once('change', filename => {
                     expect(filename).toBe(tmpFile)
                     Fs.removeSync(tmpFile)
                     globalGaze.close()

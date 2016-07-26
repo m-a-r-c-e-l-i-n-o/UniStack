@@ -182,7 +182,7 @@ const UniStack = {
         gaze.on('added', filename => gaze.add(filename))
         gaze.on('changed', _.throttle(filename => {
             if (this.reloader && this.reloader.io) {
-                this.reloader.io.emit('echo', filename)
+                this.reloader.io.emit('change', filename)
             }
             opts.callback(filename)
         }, 3000, { trailing: true }))
