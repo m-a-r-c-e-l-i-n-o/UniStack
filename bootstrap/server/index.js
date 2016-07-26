@@ -68,9 +68,10 @@ app.use( async (ctx, next) => {
     ctx.body = layoutHTML;
     next()
 } )
-const server = app.listen(ENV.serverPort, () => { /* server is ready */ })
 const exportObj = {
-    server: server,
+    serve: new Promise((resolve, reject) => {
+        const server = app.listen(ENV.serverPort, () => resolve(server))
+    }),
     environment: process.env.NODE_ENV
 }
 

@@ -526,6 +526,7 @@ if (!process.env.QUICK_TEST_RUN) {
         })
     })
 }
+
 describe ('UniStack installJSPMDependencies()', () => {
     let originalTimeout
     beforeEach(() => {
@@ -670,7 +671,10 @@ describe ('UniStack bundleForNode()', () => {
             expect(() => Fs.lstatSync(outputFile)).not.toThrowError()
             const response = require(outputFile).default
             expect(response.environment).toBe('development')
-            response.server.close(() => {
+            return response.serve
+        })
+        .then(server => {
+            server.close(() => {
                 delete require.cache[outputFile]
                 Fs.removeSync(outputFile)
                 Fs.removeSync(outputFile + '.map')
@@ -685,7 +689,10 @@ describe ('UniStack bundleForNode()', () => {
             expect(() => Fs.lstatSync(outputFile)).not.toThrowError()
             const response = require(outputFile).default
             expect(response.environment).toBe('production')
-            response.server.close(() => {
+            return response.serve
+        })
+        .then(server => {
+            server.close(() => {
                 delete require.cache[outputFile]
                 Fs.removeSync(outputFile)
                 Fs.removeSync(outputFile + '.map')
@@ -736,6 +743,27 @@ describe ('UniStack bundleForBrowser()', () => {
     })
 })
 
+describe ('UniStack initReloader()', () => {
+    it ('should return server and io instances', (done) => {
+        UniStack.initReloader()
+        .then(response => {
+            expect(typeof response.server).toBe('object')
+            expect(typeof response.io).toBe('object')
+            response.server.destroy(done)
+        })
+        .catch(e => console.error(e.stack))
+    })
+    it ('should start server with the config defined port', (done) => {
+        UniStack.initReloader()
+        .then(response => {
+            const server = response.server
+            expect(server.address().port).toBe(Config.server.reloaderPort)
+            server.destroy(done)
+        })
+        .catch(e => console.error(e.stack))
+    })
+})
+
 describe ('UniStack getFileWatchOptions()', () => {
     const MockUniStack = Object.assign({}, UniStack)
     MockUniStack.system = MockUniStack.getSystemConstant()
@@ -756,7 +784,9 @@ describe ('UniStack getFileWatchOptions()', () => {
     })
     it ('should return a callback that destroys the environment server', (done) => {
         MockUniStack.environmentServer = { close: done }
-        const bundleMock = { node: true, instance: { build: () => {} } }
+        const bundleMock = { node: true, instance: { build: () => {
+            return { then: () => {} }
+        } } }
         const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
         watchOptions.callback()
     })
@@ -778,24 +808,44 @@ describe ('UniStack getFileWatchOptions()', () => {
             Path.join(bootstrapPath, `{client/!(client.bundle),client/!(test)/**}.js`)
         ])
     })
-})
+    it ('should emit a "reload" event to the client and restart environment server', (done) => {
+        MockUniStack.runNodeBundle = () => Promise.resolve()
+        spyOn(MockUniStack, 'runNodeBundle')
 
-describe ('UniStack initSocket()', () => {
-    it ('should return server and io instances', (done) => {
-        UniStack.initReloader()
+        const testPath = Path.join(__dirname, '..')
+        const tmpPath = Path.join(testPath, '..')
+        const tmpFile = Path.join(tmpPath, 'test', 'file-watch-test.js')
+        Fs.copySync(Path.join(testPath, 'mocks', 'file-watch-test.js'), tmpFile)
+        MockUniStack.initReloader()
         .then(response => {
-            expect(typeof response.server).toBe('object')
-            expect(typeof response.io).toBe('object')
-            response.server.destroy(done)
+            return new Promise((resolve, reject) => {
+                response.io.on('connection', socket => {
+                    resolve()
+                })
+                const host = 'http://localhost:' + Config.server.reloaderPort
+                const clientSocket = IOClient.connect(host, {
+                    'reconnection delay' : 0,
+                    'reopen delay' : 0,
+                    'force new connection' : true
+                })
+                clientSocket.once('reload', () => {
+                    expect(MockUniStack.runNodeBundle).toHaveBeenCalledTimes(1)
+                    Fs.removeSync(tmpFile)
+                    response.server.destroy(done)
+                })
+            })
         })
-        .catch(e => console.error(e.stack))
-    })
-    it ('should start server with the config defined port', (done) => {
-        UniStack.initReloader()
-        .then(response => {
-            const server = response.server
-            expect(server.address().port).toBe(Config.server.reloaderPort)
-            server.destroy(done)
+        .then(() => {
+            MockUniStack.environmentServer = { close: innerCallback => {
+                innerCallback()
+            } }
+            const bundleMock = { node: true, instance: {
+                build: () => {
+                    return Promise.resolve()
+                }
+            } }
+            const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
+            watchOptions.callback()
         })
         .catch(e => console.error(e.stack))
     })
@@ -890,7 +940,7 @@ describe ('UniStack runNodeBundle()', () => {
     let originalTimeout
     beforeEach(() => {
         originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000
     })
     afterEach(() => {
         jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
@@ -899,8 +949,8 @@ describe ('UniStack runNodeBundle()', () => {
         const outputFile = Path.join(bootstrapPath, 'server', 'server.bundle.js')
         MockUniStack.bundleForNode()
         .then(MockUniStack.runNodeBundle.bind(MockUniStack))
-        .then(response => {
-            response.server.close(() => {
+        .then(server => {
+            server.close(() => {
                 delete require.cache[outputFile]
                 Fs.removeSync(outputFile)
                 Fs.removeSync(outputFile + '.map')
@@ -919,6 +969,7 @@ describe ('UniStack initDevEnvironment()', () => {
     MockUniStack.getFileWatchOptions = () => Promise.resolve()
     MockUniStack.watchFiles = () => Promise.resolve()
     MockUniStack.runNodeBundle = () => Promise.resolve()
+
     it ('should return a promise', (done) => {
         const promise = MockUniStack.initDevEnvironment()
         expect(typeof promise.then).toBe('function')
@@ -973,3 +1024,23 @@ describe ('UniStack initDevEnvironment()', () => {
         .catch(e => console.log(e.stack))
     })
 })
+
+/*
+describe ('UniStack initDevEnvironment()', () => {
+    const MockUniStack = Object.assign({}, UniStack)
+    MockUniStack.system = MockUniStack.getSystemConstant()
+
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 240000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should start dev environment', (done) => {
+        console.log('Starting dev environment!')
+        MockUniStack.initDevEnvironment().catch(e => console.log(e))
+    })
+})
+*/

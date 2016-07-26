@@ -209,6 +209,13 @@ const UniStack = {
             config.callback = (filename) => {
                 this.environmentServer.close(() => {
                     bundler.build(filename)
+                    .then(this.runNodeBundle())
+                    .then(() => {
+                        if (this.reloader && this.reloader.io) {
+                            this.reloader.io.emit('reload', filename)
+                        }
+                    })
+                    .catch(e => this.handleError(e, false, this.throwAsyncError.bind(this)))
                 })
             }
         }
@@ -276,19 +283,16 @@ const UniStack = {
         const serverPath =  Path.join(unistackPath, 'bootstrap', 'server')
         const serverBundle = Path.join(serverPath, 'server.bundle.js')
         return new Promise((resolve, reject) => {
-            try {
-                const bundle = require(serverBundle).default
-                this.environmentServer = bundle.server
-                resolve(bundle)
-            } catch (e) {
-                reject(e)
-            }
+            const bundle = require(serverBundle).default
+            resolve(bundle)
         })
+        .then(bundle => bundle.serve)
+        .then(server => this.environmentServer = server)
     },
     initDevEnvironment(config) {
         return Promise.resolve()
         .then(this.initReloader.bind(this))
-        .then(this.bundleForNode.bind(this))
+        .then(() => this.bundleForNode())
         .then(this.getFileWatchOptions.bind(this))
         .then(this.watchFiles.bind(this))
         .then(this.bundleForBrowser.bind(this))
