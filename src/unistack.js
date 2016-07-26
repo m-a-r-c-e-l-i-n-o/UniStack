@@ -200,14 +200,19 @@ const UniStack = {
             Path.join(bootstrapPath, `{${directory}/!(${directory}.bundle),${directory}/!(test)/**}.js`)
         ]
         const bundler = bundle.instance
-        return {
-            patterns: patterns,
-            callback: (filename) => {
+        const config = { patterns }
+        if (!bundle.node) {
+            config.callback = (filename) => {
+                bundler.build(filename)
+            }
+        } else {
+            config.callback = (filename) => {
                 this.environmentServer.close(() => {
                     bundler.build(filename)
                 })
             }
         }
+        return config
     },
     bundle(options = {}) {
         const bootstrapPath = Path.join(this.system.unistackPath, 'bootstrap')

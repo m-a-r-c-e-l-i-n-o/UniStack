@@ -749,9 +749,14 @@ describe ('UniStack getFileWatchOptions()', () => {
     afterEach(() => {
         jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
     })
-    it ('should return a update bundle callback', (done) => {
+    it ('should return a callback that triggers a new bundle build', (done) => {
+        const bundleMock = { instance: { build: done } }
+        const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
+        watchOptions.callback()
+    })
+    it ('should return a callback that destroys the environment server', (done) => {
         MockUniStack.environmentServer = { close: done }
-        const bundleMock = { instance: { build: () => {} } }
+        const bundleMock = { node: true, instance: { build: () => {} } }
         const watchOptions = MockUniStack.getFileWatchOptions(bundleMock)
         watchOptions.callback()
     })
