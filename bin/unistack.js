@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require('../dist/cli.js').default(process.argv)
+require('../dist/cli.js').default.constructor(process.argv).then(process.exit)

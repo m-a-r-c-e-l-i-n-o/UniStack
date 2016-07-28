@@ -14,9 +14,9 @@ Config.server.serverPort = 8080
 Config.server.reloaderPort = 5776
 
 Config.environment.directory = (
-    typeof process === 'object' && process.env['NODE_ENV'] === 'development'
-    ? Path.join(process.cwd(), './test/environment')
-    : (typeof process === 'object' ? process.cwd() : '/')
+    typeof process === 'object' && process.env['NODE_ENV'] === 'development' ?
+    Path.join(process.cwd(), 'test', 'environment') :
+    ( typeof process === 'object' ? process.cwd() : '' )
 )
 
 Config.errors.invalidCLIArguments = `
