@@ -2,7 +2,6 @@
 import Fs from 'fs-extra'
 import Path from 'path'
 import _ from 'lodash'
-//import Inquirer from 'inquirer'
 import Argv from 'argv'
 import ChildProcess from 'child_process'
 import Bundler from 'jspm-dev-builder'
