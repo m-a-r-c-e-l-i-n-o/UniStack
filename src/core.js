@@ -145,6 +145,30 @@ class UniStack {
         .then(() => this.runNodeBundle())
         .catch(e => this.handleError(e, false, this.throwAsyncError.bind(this)))
     }
+    stopDevEnvironment() {
+        return Promise.resolve()
+        .then(() => this.haltNodeBundle())
+        .then(() => this.destroyReloader())
+        .then(() => this.destroyWatcher())
+        .catch(e => this.handleError(e, false, this.throwAsyncError.bind(this)))
+    }
+    haltNodeBundle() {
+        const state = this.getState()
+        return new Promise((resolve, reject) => {
+            state.environment.server.destroy(resolve)
+        })
+    }
+    destroyReloader() {
+        const state = this.getState()
+        return new Promise((resolve, reject) => {
+            state.reloader.server.destroy(resolve)
+        })
+    }
+    destroyWatcher() {
+        const state = this.getState()
+        state.watcher.server.close()
+        return Promise.resolve()
+    }
     initReloader() {
         const server = CreateServer()
         const io = IO(server)

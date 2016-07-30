@@ -843,6 +843,121 @@ describe ('UniStack startDevEnvironment()', () => {
     })
 })
 
+describe ('UniStack stopDevEnvironment()', () => {
+    const unistack = new UniStack()
+    unistack.haltNodeBundle = () => Promise.resolve()
+    unistack.destroyReloader = () => Promise.resolve()
+    unistack.destroyWatcher = () => Promise.resolve()
+
+    it ('should return a promise', (done) => {
+        const promise = unistack.stopDevEnvironment()
+        expect(typeof promise.then).toBe('function')
+        promise.then(done)
+    })
+    it ('should terminate node bundle\'s process', (done) => {
+        spyOn(unistack, 'haltNodeBundle')
+        unistack.stopDevEnvironment()
+        .then(() => {
+            expect(unistack.haltNodeBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should destroy reloader server', (done) => {
+        spyOn(unistack, 'destroyReloader')
+        unistack.stopDevEnvironment()
+        .then(() => {
+            expect(unistack.destroyReloader).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should destroy watcher server', (done) => {
+        spyOn(unistack, 'destroyWatcher')
+        unistack.stopDevEnvironment()
+        .then(() => {
+            expect(unistack.destroyWatcher).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should throw errors if something went wrong', (done) => {
+        const error = new Error('fatal')
+
+        let errors = 3
+        unistack.handleError = e => { // mock error function
+            expect(e).toBe(error)
+            if (--errors === 0) {
+                done()
+            }
+        }
+
+        const promiseError = () => Promise.resolve().then(() => { throw error })
+
+        unistack.haltNodeBundle = promiseError
+        Promise.resolve()
+        .then(() => unistack.stopDevEnvironment())
+        .then(() => {
+            unistack.haltNodeBundle = () => Promise.resolve()
+            unistack.destroyReloader = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.stopDevEnvironment())
+        .then(() => {
+            unistack.destroyReloader = () => Promise.resolve()
+            unistack.destroyWatcher = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.stopDevEnvironment())
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+})
+
+describe ('UniStack haltNodeBundle()', () => {
+    const unistack = new UniStack()
+    it ('should terminate node bundle\'s process', (done) => {
+        unistack.cache.state = {
+            environment: {
+                server: {
+                    destroy: () => {
+                        done()
+                    }
+                }
+            }
+        }
+        unistack.haltNodeBundle().then(done)
+    })
+})
+
+describe ('UniStack destroyReloader()', () => {
+    const unistack = new UniStack()
+    it ('should destroy reloader server', (done) => {
+        unistack.cache.state = {
+            reloader: {
+                server: {
+                    destroy: () => {
+                        done()
+                    }
+                }
+            }
+        }
+        unistack.destroyReloader().then(done)
+    })
+})
+
+describe ('UniStack destroyWatcher()', () => {
+    const unistack = new UniStack()
+    it ('should destroy watcher server', (done) => {
+        unistack.cache.state = {
+            watcher: {
+                server: {
+                    close: () => {
+                        done()
+                    }
+                }
+            }
+        }
+        unistack.destroyWatcher().then(done)
+    })
+})
+
 if (!process.env.QUICK_TEST_RUN) {
     describe ('UniStack JSPM install dependent tests', () => {
         describe ('UniStack installJSPMDependencies()', () => {
