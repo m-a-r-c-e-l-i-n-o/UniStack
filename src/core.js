@@ -136,6 +136,15 @@ class UniStack {
         const system = this.getSystemConstants()
         Fs.emptyDirSync(system.environment.root)
     }
+    startDevEnvironment() {
+        return Promise.resolve()
+        .then(() => this.initNodeBundle())
+        .then(() => this.initBrowserBundle())
+        .then(() => this.initReloader())
+        .then(() => this.watchFiles())
+        .then(() => this.runNodeBundle())
+        .catch(e => this.handleError(e, false, this.throwAsyncError.bind(this)))
+    }
     initReloader() {
         const server = CreateServer()
         const io = IO(server)

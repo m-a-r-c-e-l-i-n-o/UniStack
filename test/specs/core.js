@@ -746,6 +746,103 @@ describe ('UniStack handleFileChange()', () => {
     })
 })
 
+describe ('UniStack startDevEnvironment()', () => {
+    const unistack = new UniStack()
+    unistack.initNodeBundle = () => Promise.resolve()
+    unistack.initBrowserBundle = () => Promise.resolve()
+    unistack.initReloader = () => Promise.resolve()
+    unistack.watchFiles = () => Promise.resolve()
+    unistack.runNodeBundle = () => Promise.resolve()
+
+    it ('should return a promise', (done) => {
+        const promise = unistack.startDevEnvironment()
+        expect(typeof promise.then).toBe('function')
+        promise.then(done)
+    })
+    it ('should initialize node bundle', (done) => {
+        spyOn(unistack, 'initNodeBundle')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.initNodeBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should initialize browser bundle', (done) => {
+        spyOn(unistack, 'initBrowserBundle')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.initBrowserBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should initialize reloader server', (done) => {
+        spyOn(unistack, 'initReloader')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.initReloader).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should install jspm dependencies', (done) => {
+        spyOn(unistack, 'watchFiles')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.watchFiles).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should install npm dependencies', (done) => {
+        spyOn(unistack, 'runNodeBundle')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.runNodeBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should throw errors if something went wrong', (done) => {
+        const error = new Error('fatal')
+
+        let errors = 5
+        unistack.handleError = e => { // mock error function
+            expect(e).toBe(error)
+            if (--errors === 0) {
+                done()
+            }
+        }
+
+        const promiseError = () => Promise.resolve().then(() => { throw error })
+
+        unistack.initNodeBundle = promiseError
+        Promise.resolve()
+        .then(() => unistack.startDevEnvironment())
+        .then(() => {
+            unistack.initNodeBundle = () => Promise.resolve()
+            unistack.initBrowserBundle = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.startDevEnvironment())
+        .then(() => {
+            unistack.initBrowserBundle = () => Promise.resolve()
+            unistack.initReloader = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.startDevEnvironment())
+        .then(() => {
+            unistack.initReloader = () => Promise.resolve()
+            unistack.watchFiles = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.startDevEnvironment())
+        .then(() => {
+            unistack.watchFiles = () => Promise.resolve()
+            unistack.runNodeBundle = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.startDevEnvironment())
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+})
+
 if (!process.env.QUICK_TEST_RUN) {
     describe ('UniStack JSPM install dependent tests', () => {
         describe ('UniStack installJSPMDependencies()', () => {
