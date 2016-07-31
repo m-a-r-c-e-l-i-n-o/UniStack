@@ -39,6 +39,34 @@ class UniStack {
             root: unistackPath
         })
     }
+    listenToCLI() {
+        const IPC = require('ipc-event-emitter').default
+        const state = this.getState()
+        const ipc = IPC(process)
+        return new Promise((resolve, reject) => {
+            state.cli.ipc = ipc
+            ipc.fix('core::ready')
+            ipc.on('cli::command', (command) => {
+                if (command.type === 'terminate') {
+                    return resolve(ipc)
+                }
+                this.handleCommand(command)
+            })
+        })
+    }
+    handleCommand(command) {
+        switch(command.type) {
+            default:
+                this.commandNotFound(command)
+        }
+    }
+    commandNotFound(command) {
+        const state = this.getState()
+        state.cli.ipc.emit('core::status', {
+            type: 'command_not_found',
+            data: command
+        })
+    }
     resolveConfig(filename) {
         if (!filename) {
             filename = {}

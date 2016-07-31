@@ -16,6 +16,9 @@ const coreState = {
             }
         }
     },
+    cli: {
+        ipc: null
+    },
     reloader: {
         server: null,
         io: null

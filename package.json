@@ -5,7 +5,7 @@
   "main": "./dist/unistack.js",
   "scripts": {
     "test": "./test.js",
-    "test-quick": "./test.js --quick",
+    "test-quick": "npm run build && ./test.js --quick",
     "encrypt-saucelabs": "gpg -c .saucelabs",
     "decrypt-saucelabs": "echo $super_secret_password | gpg --passphrase-fd 0 .saucelabs.gpg",
     "build": "babel src --out-dir dist",
@@ -44,6 +44,7 @@
     "gaze": "^1.1.0",
     "gulp": "github:gulpjs/gulp#4.0",
     "inquirer": "^1.1.0",
+    "ipc-event-emitter": "^1.0.0",
     "jspm": "^0.17.0-beta.22",
     "jspm-dev-builder": "github:m-a-r-c-e-l-i-n-o/jspm-dev-builder",
     "karma": "^1.1.1",
@@ -53,6 +54,7 @@
     "karma-sauce-launcher": "^1.0.0",
     "lodash": "^4.13.1",
     "minimatch": "^3.0.2",
+    "mock-require": "^1.3.0",
     "mock-stdin": "^0.3.0",
     "nutra": "0.0.12",
     "nutra-jasmine-coverage-babel-preset": "0.0.4",
@@ -61,6 +63,7 @@
     "server-destroy": "^1.0.1",
     "socket.io": "^1.4.8",
     "socket.io-client": "^1.4.8",
-    "source-map-support": "^0.4.2"
+    "source-map-support": "^0.4.2",
+    "tree-kill": "^1.1.0"
   }
 }

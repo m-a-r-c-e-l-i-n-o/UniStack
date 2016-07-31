@@ -1,7 +1,9 @@
 const cliState = {
-    message: {
-        server: null,
-        io: null
+    processes: {
+        core: null
+    },
+    messenger: {
+        core: null
     }
 }
 

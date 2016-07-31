@@ -1,5 +1,8 @@
 import Fs from 'fs-extra'
 import Path from 'path'
+import TreeKill from 'tree-kill'
+import ChildProcess from 'child_process'
+import IPC from 'ipc-event-emitter'
 import IOClient from 'socket.io-client'
 import { createServer as CreateServer } from 'http'
 import UniStack from '../../src/core.js'
@@ -7,6 +10,7 @@ import State from '../../src/core-state.js'
 import Config from '../../config.js'
 import BDDStdin from '../lib/bdd-stdin.js'
 import ServerDestroy from 'server-destroy'
+import Mock from 'mock-require'
 
 const unistackPath = Path.join(__dirname, '..', '..')
 const unistackTmpPath = Path.join(unistackPath, 'tmp')
@@ -65,7 +69,7 @@ describe ('UniStack getState()', () => {
     })
 })
 
-describe ('UniStackCLI getSystemConstants()', () => {
+describe ('UniStack getSystemConstants()', () => {
     it ('should return a root property with unistack\'s root path', () => {
         const unistack = new UniStack()
         const system = unistack.getSystemConstants()
@@ -85,6 +89,137 @@ describe ('UniStackCLI getSystemConstants()', () => {
         const unistack = new UniStack()
         const system = unistack.getSystemConstants()
         expect(unistack.getSystemConstants()).toBe(system)
+    })
+})
+
+describe ('UniStack listenToCLI()', () => {
+    it ('should resolve the promise when a "terminate" command is emitted', (done) => {
+        const mockIPC = {
+            fix: jasmine.createSpy('fix'),
+            on: (event, callback) => {
+                const mockTerminationEvent = { type: 'terminate' }
+                callback(mockTerminationEvent)
+            }
+        }
+        Mock('ipc-event-emitter', { default: () => mockIPC })
+        const unistack = new UniStack()
+        unistack.listenToCLI().then(() => {
+            Mock.stopAll()
+            done()
+        })
+    })
+    it ('should store the cli ipc in the state object', (done) => {
+        const mockIPC = {
+            fix: () => {},
+            on: (event, callback) => {
+                const mockTerminationEvent = { type: 'terminate' }
+                callback(mockTerminationEvent)
+            }
+        }
+        Mock('ipc-event-emitter', { default: () => mockIPC })
+        const unistack = new UniStack()
+        unistack.listenToCLI().then(ipc => {
+            expect(unistack.cache.state.cli.ipc).toBe(ipc)
+            Mock.stopAll()
+            done()
+        })
+        .catch(e => console.error(e.stack))
+    })
+    it ('should emit a core ready event', (done) => {
+        const mockIPC = {
+            fix: jasmine.createSpy('fix'),
+            on: (event, callback) => {
+                const mockTerminationEvent = { type: 'terminate' }
+                callback(mockTerminationEvent)
+            }
+        }
+        Mock('ipc-event-emitter', { default: () => mockIPC })
+        const unistack = new UniStack()
+        unistack.listenToCLI().then(() => {
+            Mock.stopAll()
+            done()
+        })
+        expect(mockIPC.fix).toHaveBeenCalledTimes(1)
+        expect(mockIPC.fix).toHaveBeenCalledWith('core::ready')
+    })
+    it ('should subscribe to cli commands', (done) => {
+        const mockIPC = {
+            fix: () => {},
+            on: (event, callback) => {
+                const mockTerminationEvent = { type: 'terminate' }
+                callback(mockTerminationEvent)
+            }
+        }
+        Mock('ipc-event-emitter', { default: () => mockIPC })
+        const unistack = new UniStack()
+        spyOn(mockIPC, 'on').and.callThrough()
+        unistack.listenToCLI().then(() => {
+            Mock.stopAll()
+            done()
+        })
+        expect(mockIPC.on).toHaveBeenCalledTimes(1)
+        expect(mockIPC.on).toHaveBeenCalledWith('cli::command', jasmine.any(Function))
+    })
+    it ('should handle command from cli', (done) => {
+        const mockRandomEvent = { type: 'something_other_than_terminate' }
+        const mockIPC = {
+            fix: jasmine.createSpy('fix'),
+            on: (event, callback) => {
+                callback(mockRandomEvent)
+                const mockTerminationEvent = { type: 'terminate' }
+                callback(mockTerminationEvent)
+            }
+        }
+        Mock('ipc-event-emitter', { default: () => mockIPC })
+        const unistack = new UniStack()
+        unistack.handleCommand = () => {}
+        spyOn(unistack, 'handleCommand').and.callThrough()
+        unistack.listenToCLI().then(() => {
+            Mock.stopAll()
+            done()
+        })
+        expect(unistack.handleCommand).toHaveBeenCalledTimes(1)
+        expect(unistack.handleCommand).toHaveBeenCalledWith(mockRandomEvent)
+    })
+})
+
+describe ('UniStack handleCommand()', () => {
+    it ('should handle unknown status updates from core', () => {
+        const unistack = new UniStack
+        const status = {
+            type: 'unknown_status',
+            data: 'mystery'
+        }
+        unistack.commandNotFound = () => {}
+        spyOn(unistack, 'commandNotFound').and.callThrough()
+        unistack.handleCommand(status)
+        expect(unistack.commandNotFound).toHaveBeenCalledTimes(1)
+        expect(unistack.commandNotFound).toHaveBeenCalledWith(status)
+    })
+})
+
+describe ('UniStackCLI commandNotFound()', () => {
+    it ('should handle unknown status updates from core', (done) => {
+        const unistack = new UniStack
+        const mockUnknownCommand = {
+            type: 'unknown_command',
+            data: 'mystery'
+        }
+        const mockIPC = {
+            emit: (event, data) => {
+                expect(event).toBe('core::status')
+                expect(data.type).toBe('command_not_found')
+                expect(data.data).toBe(mockUnknownCommand)
+                done()
+            }
+        }
+        unistack.cache.state = {
+            cli: {
+                ipc: mockIPC
+            }
+        }
+        spyOn(unistack, 'commandNotFound').and.callThrough()
+        unistack.commandNotFound(mockUnknownCommand)
     })
 })
 
