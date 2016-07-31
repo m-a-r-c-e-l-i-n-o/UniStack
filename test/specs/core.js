@@ -65,18 +65,26 @@ describe ('UniStack getState()', () => {
     })
 })
 
-describe ('UniStack getSystemConstants()', () => {
-    const unistack = new UniStack()
-    const envUnistackPath = Path.join(envPath, 'node_modules', 'unistack')
-    const system = unistack.getSystemConstants()
+describe ('UniStackCLI getSystemConstants()', () => {
     it ('should return a root property with unistack\'s root path', () => {
+        const unistack = new UniStack()
+        const system = unistack.getSystemConstants()
         expect(system.root).toBe(unistackPath)
     })
     it ('should return an property with the environment\'s root path', () => {
+        const unistack = new UniStack()
+        const system = unistack.getSystemConstants()
         expect(system.environment.root).toBe(envPath)
     })
     it ('should return an property with the environment\'s unistack root path', () => {
+        const unistack = new UniStack()
+        const system = unistack.getSystemConstants()
         expect(system.environment.unistack.root).toBe(envUnistackPath)
+    })
+    it ('should cache system object', () => {
+        const unistack = new UniStack()
+        const system = unistack.getSystemConstants()
+        expect(unistack.getSystemConstants()).toBe(system)
     })
 })
 
