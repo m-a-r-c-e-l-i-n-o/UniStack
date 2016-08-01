@@ -747,6 +747,29 @@ describe ('UniStack rebuildBundles()', () => {
         unistack.rebuildBundles({ browser: true, node: true, explicitNode: true })
         .catch(e => console.log(e.stack)) // catch errors in previous blocks
     })
+    it ('should handle errors thrown by the bundlers', (done) => {
+        const unistack = new UniStack()
+        const mockError = new Error('Mock Error!')
+        // mock bundler
+        unistack.cache.state = {
+            environment: {
+                bundles: {
+                    node: {
+                        bundler: {
+                            build: () => Promise.reject(mockError)
+                        }
+                    }
+                }
+            }
+        }
+        // mock emit event
+        unistack.handleError = error => {
+            expect(error).toBe(mockError)
+            done()
+        }
+        unistack.rebuildBundles({ node: true })
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
 })
 
 describe ('UniStack rebuildBundles()', () => {
@@ -860,9 +883,9 @@ describe ('UniStack handleFileChange()', () => {
         }
         const clientFile = Path.join(envPath, 'src', 'client', 'index.js')
         const serverFile = Path.join(envPath, 'src', 'server', 'index.js')
-        unistack.handleFileChange(clientFile)
         unistack.handleFileChange(serverFile)
-        unistack.handleFileChange(clientFile) // ensure no overwrites
+        unistack.handleFileChange(clientFile)
+        unistack.handleFileChange(serverFile) // ensure no overwrites
     })
     it ('should trigger "change" event when triggering non-node bundle', (done) => {
         const unistack = new UniStack()

@@ -224,7 +224,7 @@ class UniStack {
         }
 
         if (config.node) {
-            Promise.all([promise, bundles.node.bundler.build()])
+            promise = Promise.all([promise, bundles.node.bundler.build()])
             .then(() => {
                 if (config.explicitNode) {
                     this.emitEvent('reload')
