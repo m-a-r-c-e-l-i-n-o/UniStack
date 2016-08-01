@@ -377,10 +377,9 @@ class UniStack {
             error = new Error(error)
         }
         if (!options.warning) {
-            if (typeof options.hook === 'function') {
-                if (options.hook(error) === false) {
-                    return;
-                }
+            const hook = options.hook
+            if (typeof hook === 'function' && hook(error) === false) {
+                return
             }
             this.throwError(error)
         }
