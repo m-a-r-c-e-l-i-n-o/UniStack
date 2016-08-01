@@ -92,7 +92,7 @@ class UniStack {
         return config.options
     }
     initSetup() {
-        this.validateEnvironmentRoot()
+        this.isEnvironmentEmpty()
         this.setupPackageJSON()
         this.setupEnvironment()
         return Promise.resolve()
@@ -102,7 +102,7 @@ class UniStack {
                 this.handleError(e, {hook: this.throwAsyncError.bind(this)})
             )
     }
-    validateEnvironmentRoot() {
+    isEnvironmentEmpty() {
         const system = this.getSystemConstants()
         if (Fs.readdirSync(system.environment.root).length > 0) {
             throw new Error(Config.errors.installationDirectoryIsPopulated)

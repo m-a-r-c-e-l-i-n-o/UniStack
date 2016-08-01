@@ -327,7 +327,7 @@ describe ('UniStack throwAsyncError()', () => {
     })
 })
 
-describe ('UniStack validateEnvironmentRoot()', () => {
+describe ('UniStack isEnvironmentEmpty()', () => {
     const unistack = new UniStack()
     const enviroment = Path.join(unistackPath, 'environment')
     const tmpEnvRename = Path.join(unistackTmpPath, 'environment')
@@ -342,7 +342,7 @@ describe ('UniStack validateEnvironmentRoot()', () => {
     it ('should throw error when environment directory is not empty', () => {
         // set up new environment
         Fs.copySync(unistackEnvPath, envPath)
-        expect(() => unistack.validateEnvironmentRoot())
+        expect(() => unistack.isEnvironmentEmpty())
         .toThrowError(Config.errors.installationDirectoryIsPopulated)
         // remove new environment
         Fs.removeSync(envPath)
@@ -350,7 +350,7 @@ describe ('UniStack validateEnvironmentRoot()', () => {
     it ('should remain silent when environment directory is empty', () => {
         // set up new environment
         Fs.ensureDirSync(envPath)
-        expect(() => unistack.validateEnvironmentRoot()).not.toThrowError()
+        expect(() => unistack.isEnvironmentEmpty()).not.toThrowError()
         // remove new environment
         Fs.removeSync(envPath)
     })
@@ -358,49 +358,53 @@ describe ('UniStack validateEnvironmentRoot()', () => {
 
 describe ('UniStack initSetup()', () => {
     const unistack = new UniStack()
-    unistack.validateEnvironmentRoot = () => {}
+    unistack.isEnvironmentEmpty = () => {}
     unistack.setupPackageJSON = () => {}
     unistack.setupEnvironment = () => {}
     unistack.installJSPMDependencies = () => Promise.resolve()
     unistack.installNPMDependencies = () => Promise.resolve()
 
-    it ('should return a promise', (done) => {
-        const promise = unistack.initSetup(baseCommand)
-        expect(typeof promise.then).toBe('function')
-        promise.then(answers => done())
+    it ('should call the "isEnvironmentEmpty" method', (done) => {
+        spyOn(unistack, 'isEnvironmentEmpty')
+        unistack.initSetup()
+        .then(() => {
+            expect(unistack.isEnvironmentEmpty).toHaveBeenCalledTimes(1)
+            done()
+        })
     })
-    it ('should validate environment directory', () => {
-        spyOn(unistack, 'validateEnvironmentRoot')
-        unistack.initSetup(baseCommand)
-        expect(unistack.validateEnvironmentRoot).toHaveBeenCalledTimes(1)
-    })
-    it ('should setup a "package.json" file', () => {
+    it ('should call the "setupPackageJSON" method', (done) => {
         spyOn(unistack, 'setupPackageJSON')
-        unistack.initSetup(baseCommand)
-        expect(unistack.setupPackageJSON).toHaveBeenCalledTimes(1)
+        unistack.initSetup()
+        .then(() => {
+            expect(unistack.setupPackageJSON).toHaveBeenCalledTimes(1)
+            done()
+        })
     })
-    it ('should files and folders to the environment directory', () => {
+    it ('should call the "setupEnvironment" method', (done) => {
         spyOn(unistack, 'setupEnvironment')
-        unistack.initSetup(baseCommand)
-        expect(unistack.setupEnvironment).toHaveBeenCalledTimes(1)
+        unistack.initSetup()
+        .then(() => {
+            expect(unistack.setupEnvironment).toHaveBeenCalledTimes(1)
+            done()
+        })
     })
-    it ('should install jspm dependencies', (done) => {
+    it ('should call the "installJSPMDependencies" method', (done) => {
         spyOn(unistack, 'installJSPMDependencies')
-        unistack.initSetup(baseCommand)
+        unistack.initSetup()
         .then(() => {
             expect(unistack.installJSPMDependencies).toHaveBeenCalledTimes(1)
             done()
         })
     })
-    it ('should install npm dependencies', (done) => {
+    it ('should call the "installNPMDependencies" method', (done) => {
         spyOn(unistack, 'installNPMDependencies')
-        unistack.initSetup(baseCommand)
+        unistack.initSetup()
         .then(() => {
             expect(unistack.installNPMDependencies).toHaveBeenCalledTimes(1)
             done()
         })
     })
-    it ('should throw errors if something went wrong', (done) => {
+    it ('should catch errors if something went wrong', (done) => {
         const error = new Error('fatal')
 
         let errors = 2
@@ -414,13 +418,13 @@ describe ('UniStack initSetup()', () => {
         const promiseError = () => Promise.resolve().then(() => { throw error })
         unistack.installNPMDependencies = promiseError
         Promise.resolve()
-        .then(() => unistack.initSetup(baseCommand))
+        .then(() => unistack.initSetup())
         .then(() => {
             unistack.installNPMDependencies = () => Promise.resolve()
             unistack.installJSPMDependencies = promiseError
             return Promise.resolve()
         })
-        .then(() => unistack.initSetup(baseCommand))
+        .then(() => unistack.initSetup())
         .catch(e => console.log(e.stack)) // catch errors in previous blocks
     })
 })
@@ -534,7 +538,7 @@ if (!process.env.QUICK_TEST_RUN) {
         })
         it ('should install npm dependencies', (done) => {
             console.log('--Testing installation of NPM dependencies!')
-            unistack.validateEnvironmentRoot()
+            unistack.isEnvironmentEmpty()
             unistack.setupPackageJSON()
             unistack.installNPMDependencies()
             .then(passed => {
