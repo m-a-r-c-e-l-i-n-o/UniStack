@@ -185,31 +185,31 @@ describe ('UniStack listenToCLI()', () => {
 
 describe ('UniStack handleCommand()', () => {
     it ('should handle unknown status updates from core', () => {
-        const unistack = new UniStack
-        const status = {
+        const mockCommand = {
             type: 'unknown_status',
             data: 'mystery'
         }
-        unistack.commandNotFound = () => {}
-        spyOn(unistack, 'commandNotFound').and.callThrough()
-        unistack.handleCommand(status)
-        expect(unistack.commandNotFound).toHaveBeenCalledTimes(1)
-        expect(unistack.commandNotFound).toHaveBeenCalledWith(status)
+        const mockStatus = {
+            type: 'command_not_found',
+            data: mockCommand
+        }
+        const unistack = new UniStack
+        unistack.emitEventToCLI = () => {}
+        spyOn(unistack, 'emitEventToCLI').and.callThrough()
+        unistack.handleCommand(mockCommand)
+        expect(unistack.emitEventToCLI).toHaveBeenCalledTimes(1)
+        expect(unistack.emitEventToCLI).toHaveBeenCalledWith(mockStatus)
     })
 })
 
-describe ('UniStackCLI commandNotFound()', () => {
-    it ('should handle unknown status updates from core', (done) => {
+describe ('UniStackCLI emitEventToCLI()', () => {
+    it ('should emit status updates to the CLI', (done) => {
         const unistack = new UniStack
-        const mockUnknownCommand = {
-            type: 'unknown_command',
-            data: 'mystery'
-        }
+        const mockStatus = { type: 'success', data: 'mystery' }
         const mockIPC = {
             emit: (event, data) => {
                 expect(event).toBe('core::status')
-                expect(data.type).toBe('command_not_found')
-                expect(data.data).toBe(mockUnknownCommand)
+                expect(data).toBe(mockStatus)
                 done()
             }
         }
@@ -218,8 +218,7 @@ describe ('UniStackCLI commandNotFound()', () => {
                 ipc: mockIPC
             }
         }
-        spyOn(unistack, 'commandNotFound').and.callThrough()
-        unistack.commandNotFound(mockUnknownCommand)
+        unistack.emitEventToCLI(mockStatus)
     })
 })
 

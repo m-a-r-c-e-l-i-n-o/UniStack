@@ -57,15 +57,12 @@ class UniStack {
     handleCommand(command) {
         switch(command.type) {
             default:
-                this.commandNotFound(command)
+                this.emitEventToCLI({ type: 'command_not_found', data: command })
         }
     }
-    commandNotFound(command) {
+    emitEventToCLI(data) {
         const state = this.getState()
-        state.cli.ipc.emit('core::status', {
-            type: 'command_not_found',
-            data: command
-        })
+        state.cli.ipc.emit('core::status', data)
     }
     resolveConfig(filename) {
         if (!filename) {
