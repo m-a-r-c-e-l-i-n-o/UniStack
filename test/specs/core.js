@@ -923,12 +923,7 @@ describe ('UniStack startDevEnvironment()', () => {
     unistack.watchFiles = () => Promise.resolve()
     unistack.runNodeBundle = () => Promise.resolve()
 
-    it ('should return a promise', (done) => {
-        const promise = unistack.startDevEnvironment()
-        expect(typeof promise.then).toBe('function')
-        promise.then(done)
-    })
-    it ('should initialize node bundle', (done) => {
+    it ('should call the "initNodeBundle" method', (done) => {
         spyOn(unistack, 'initNodeBundle')
         unistack.startDevEnvironment()
         .then(() => {
@@ -936,7 +931,7 @@ describe ('UniStack startDevEnvironment()', () => {
             done()
         })
     })
-    it ('should initialize browser bundle', (done) => {
+    it ('should call the "initBrowserBundle" method', (done) => {
         spyOn(unistack, 'initBrowserBundle')
         unistack.startDevEnvironment()
         .then(() => {
@@ -944,7 +939,7 @@ describe ('UniStack startDevEnvironment()', () => {
             done()
         })
     })
-    it ('should initialize reloader server', (done) => {
+    it ('should call the "initReloader" method', (done) => {
         spyOn(unistack, 'initReloader')
         unistack.startDevEnvironment()
         .then(() => {
@@ -952,7 +947,7 @@ describe ('UniStack startDevEnvironment()', () => {
             done()
         })
     })
-    it ('should install jspm dependencies', (done) => {
+    it ('should call the "watchFiles" method', (done) => {
         spyOn(unistack, 'watchFiles')
         unistack.startDevEnvironment()
         .then(() => {
@@ -960,7 +955,7 @@ describe ('UniStack startDevEnvironment()', () => {
             done()
         })
     })
-    it ('should install npm dependencies', (done) => {
+    it ('should call the "runNodeBundle" method', (done) => {
         spyOn(unistack, 'runNodeBundle')
         unistack.startDevEnvironment()
         .then(() => {
