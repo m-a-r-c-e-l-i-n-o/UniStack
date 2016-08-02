@@ -31,5 +31,22 @@ Config.message.error.INSTALLATION_DIRECTORY_IS_POPULATED = `
     This directory must be empty before installation can commence.
     Please manually deleted all files (including hidden ones) from directory.
 `
+Config.message.error.NOT_UNISTACK_ENVIRONMENT = `
+    It appears that this directory is not an unistack environment. If there is a
+    high degree of confidence that this is in fact a unistack environment,
+    try reinserting a "unistack" property with a truthy value in the package.json
+    file and run the "start" command below to retry starting the dev environment.
+    However, it's crucial to understand how this property went missing in
+    the first place, as other parts of the system could have been impacted.
+`
+Config.message.error.NO_ENVIRONMENT_PACKAGE_JSON_FILE = `
+    It appears that this directory is not an unistack environment. This was
+    determined do to a failure in loading up the package.json file that holds
+    information about the environment. If there is a high degree of confidence
+    that this is in fact a unistack environment, try restating a package.json
+    file and run the "start" command below. If there is a high degree of confidence
+    that this is NOT a unistack environment, delete all files in the directory
+    and run the "init" command below to setup a new environment.
+`
 
 module.exports = Config

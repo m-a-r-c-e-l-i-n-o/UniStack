@@ -16,7 +16,6 @@ const unistackPath = Path.join(__dirname, '..', '..')
 const unistackTmpPath = Path.join(unistackPath, 'tmp')
 const unistackEnvPath = Path.join(unistackPath, 'environment')
 const envPath = Config.environment.directory
-const testPath = Path.join(unistackPath, 'test')
 const envUnistackPath = Path.join(envPath, 'node_modules', 'unistack')
 const envUnistackBootstrapPath = Path.join(envUnistackPath, 'bootstrap')
 const baseCommand = ['node', 'unistack']
@@ -459,29 +458,101 @@ describe ('UniStack destroyProject()', () => {
 })
 
 describe ('UniStack.setupPackageJSON()', () => {
-    const unistack = new UniStack()
     it ('should copy package.json file to environment directory', (done) => {
+        const unistack = new UniStack()
         unistack.setupPackageJSON().then(() => {
-            const packageJSON = Path.join(envPath, 'package.json')
-            expect(() => Fs.lstatSync(packageJSON)).not.toThrowError()
-            Fs.removeSync(packageJSON)
+            const packageJSONFile = Path.join(envPath, 'package.json')
+            expect(() => Fs.lstatSync(packageJSONFile)).not.toThrowError()
+            Fs.removeSync(packageJSONFile)
             done()
         })
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+        .catch(e => console.log(e.stack || e)) // catch errors in previous blocks
     })
     it ('should populate jspm asset paths', (done) => {
+        const unistack = new UniStack()
         unistack.setupPackageJSON().then(() => {
-            const packageJSON = Path.join(envPath, 'package.json')
-            const packageJSONObj = require(packageJSON)
+            const packageJSONFile = Path.join(envPath, 'package.json')
+            const packageJSONObj = require(packageJSONFile)
             const jspm = packageJSONObj.jspm
             expect(jspm.configFiles.jspm)
             .toBe('node_modules/unistack/bootstrap/jspm.config.js')
             expect(jspm.directories.packages)
             .toBe('node_modules/unistack/bootstrap/jspm_packages')
-            Fs.removeSync(packageJSON)
+            Fs.removeSync(packageJSONFile)
             done()
         })
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+        .catch(e => console.log(e.stack || e)) // catch errors in previous blocks
+    })
+    it ('should contain a unistack property', (done) => {
+        const unistack = new UniStack()
+        unistack.setupPackageJSON().then(() => {
+            const packageJSONFile = Path.join(envPath, 'package.json')
+            const packageJSONObj = require(packageJSONFile)
+            expect(packageJSONObj.unistack).toBeTruthy()
+            Fs.removeSync(packageJSONFile)
+            done()
+        })
+        .catch(e => console.log(e.stack || e)) // catch errors in previous blocks
+    })
+})
+
+describe ('UniStack.isUnistackEnvironment()', () => {
+    it ('should resolve when unistack property is present in package.json file', (done) => {
+        const unistack = new UniStack()
+        const tmpPackageJSONPath = Path.join(unistackTmpPath, 'test')
+        const tmpPackageJSONFile = Path.join(tmpPackageJSONPath, 'package.json')
+        // package.json path
+        unistack.cache.system = {
+            environment: {
+                root: tmpPackageJSONPath
+            }
+        }
+        Fs.outputFileSync(tmpPackageJSONFile, JSON.stringify({ unistack: true }))
+        unistack.isUnistackEnvironment(tmpPackageJSONFile).then(() => {
+            const tmpPackageJSONObj = require(tmpPackageJSONFile)
+            expect(tmpPackageJSONObj.unistack).toBeTruthy()
+            Fs.removeSync(tmpPackageJSONFile)
+            delete require.cache[tmpPackageJSONFile]
+            done()
+        })
+        .catch(e => console.log(e.stack || e)) // catch errors in previous blocks
+    })
+    it ('should throw error when unistack property is falsy', (done) => {
+        const unistack = new UniStack()
+        const errorMock = { message: 'NOT_UNISTACK_ENVIRONMENT' }
+        const tmpPackageJSONPath = Path.join(unistackTmpPath, 'test')
+        const tmpPackageJSONFile = Path.join(tmpPackageJSONPath, 'package.json')
+        Fs.outputFileSync(tmpPackageJSONFile, JSON.stringify({}))
+        // package.json path
+        unistack.cache.system = {
+            environment: {
+                root: tmpPackageJSONPath
+            }
+        }
+        unistack.isUnistackEnvironment()
+        .catch(error => {
+            expect(error).toEqual(errorMock)
+            Fs.removeSync(tmpPackageJSONFile)
+            delete require.cache[tmpPackageJSONFile]
+            done()
+        })
+    })
+    it ('should throw error when package.json file could not be required', (done) => {
+        const unistack = new UniStack()
+        const errorMock = { message: 'NO_ENVIRONMENT_PACKAGE_JSON_FILE' }
+        const tmpPackageJSONPath = Path.join(unistackTmpPath, 'test')
+        const tmpPackageJSONFile = Path.join(tmpPackageJSONPath, 'package.json')
+        // package.json path
+        unistack.cache.system = {
+            environment: {
+                root: tmpPackageJSONPath
+            }
+        }
+        unistack.isUnistackEnvironment()
+        .catch(error => {
+            expect(error).toEqual(errorMock)
+            done()
+        })
     })
 })
 
@@ -847,12 +918,21 @@ describe ('UniStack handleFileChange()', () => {
 
 describe ('UniStack startDevEnvironment()', () => {
     const unistack = new UniStack()
+    unistack.isUnistackEnvironment = () => Promise.resolve()
     unistack.initNodeBundle = () => Promise.resolve()
     unistack.initBrowserBundle = () => Promise.resolve()
     unistack.initReloader = () => Promise.resolve()
     unistack.watchFiles = () => Promise.resolve()
     unistack.runNodeBundle = () => Promise.resolve()
 
+    it ('should call the "isUnistackEnvironment" method', (done) => {
+        spyOn(unistack, 'isUnistackEnvironment')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.isUnistackEnvironment).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
     it ('should call the "initNodeBundle" method', (done) => {
         spyOn(unistack, 'initNodeBundle')
         unistack.startDevEnvironment()

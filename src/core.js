@@ -129,6 +129,8 @@ class UniStack {
             const jspmConfigFiles = packageJSONObj.jspm.configFiles
             const jspmDirectories = packageJSONObj.jspm.directories
 
+            packageJSONObj.unistack = true
+
             jspmConfigFiles.jspm = 'node_modules/unistack/bootstrap/jspm.config.js'
             jspmDirectories.packages = 'node_modules/unistack/bootstrap/jspm_packages'
 
@@ -169,8 +171,26 @@ class UniStack {
         const system = this.getSystemConstants()
         Fs.emptyDirSync(system.environment.root)
     }
+    isUnistackEnvironment() {
+        return new Promise((resolve, reject) => {
+            const system = this.getSystemConstants()
+            const envPath = system.environment.root
+            const envPackageJSONFile = Path.join(envPath, 'package.json')
+            let envPackageJSONObj
+            try {
+                envPackageJSONObj = require(envPackageJSONFile)
+            } catch (e) {
+                return reject({ message: 'NO_ENVIRONMENT_PACKAGE_JSON_FILE' })
+            }
+            if (envPackageJSONObj.unistack) {
+                return resolve(true)
+            }
+            reject({ message: 'NOT_UNISTACK_ENVIRONMENT' })
+        })
+    }
     startDevEnvironment() {
         return Promise.resolve()
+        .then(() => this.isUnistackEnvironment())
         .then(() => this.initNodeBundle())
         .then(() => this.initBrowserBundle())
         .then(() => this.initReloader())
