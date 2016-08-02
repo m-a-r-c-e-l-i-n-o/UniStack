@@ -223,107 +223,47 @@ describe ('UniStackCLI emitEventToCLI()', () => {
 })
 
 describe ('UniStack resolveConfig()', () => {
-    const unistack = new UniStack()
-    it ('should default to an empty object when config is not a string or object', () => {
-        expect(unistack.resolveConfig()).toEqual({})
-    })
-    it ('should return object when an object is passed in', () => {
-        const config = {}
-        expect(unistack.resolveConfig(config)).toBe(config)
-    })
-    it ('should resolve a config filename', () => {
-        const config = 'unistack.config.js'
-        const configFile = Path.join(envPath, config)
-        Fs.writeFileSync(configFile, basicConfig)
-        expect(unistack.resolveConfig(config)).toEqual({
-            hello: 'from mocked unistack.config.js'
-        })
-        delete require.cache[configFile]
-        Fs.removeSync(configFile)
-    })
-    it ('should throw error when file is not found', () => {
-        const config = 'unistack.config.js'
-        const configFile = Path.join(envPath, config)
-        expect(() => unistack.resolveConfig(config)).toThrowError(
-            Config.errors.invalidConfigPath
-            .replace('{{filename}}', configFile)
-        )
-    })
-})
-
-describe ('UniStack handleError()', () => {
-    const unistack = new UniStack()
-    it ('should throw error when error object is present', () => {
-        expect(() => unistack.handleError(new Error('Fatal!')))
-        .toThrowError('Fatal!')
-    })
-    it ('should throw error when error string is present', () => {
-        expect(() => unistack.handleError('Fatal!')).toThrowError('Fatal!')
-    })
-    it ('should log warning message when warning option is present', () => {
-        const consoleWarn = console.warn
-        console.warn = (message) => {
-            expect(message).toBe('Warning!')
-        }
-        const warning = true
-        expect(() => unistack.handleError(new Error('Warning!'), { warning }))
-        .not.toThrowError()
-        console.warn = consoleWarn
-    })
-    it ('should log warning message when error string and warning option is present', () => {
-        const consoleWarn = console.warn
-        console.warn = (message) => {
-            expect(message).toBe('Warning!')
-        }
-        const warning = true
-        expect(() => unistack.handleError('Warning!', { warning }))
-        .not.toThrowError()
-        console.warn = consoleWarn
-    })
-    it ('should call hook before fatal error when a hook function is provided', (done) => {
-        const spy = jasmine.createSpy('spy')
-        const hook = (error) => {
-            spy(error)
-            return false
-        }
-        const error = new Error('Fatal!')
-        new Promise((revolve, reject) => {
-            reject()
-        })
-        .catch(e => {
-            unistack.handleError(error, { hook })
-            expect(spy).toHaveBeenCalledTimes(1)
-            expect(spy).toHaveBeenCalledWith(error)
+    it ('should default to an empty object when config is not a string or object', (done) => {
+        const unistack = new UniStack()
+        unistack.resolveConfig().then(result => {
+            expect(result).toEqual({})
             done()
         })
     })
-})
-
-describe ('UniStack throwError()', () => {
-    const unistack = new UniStack()
-    it ('should throw error', () => {
-        expect(() => unistack.throwError(new Error('Fatal!')))
-        .toThrowError('Fatal!')
+    it ('should return object when an object is passed in', (done) => {
+        const unistack = new UniStack()
+        const config = {}
+        unistack.resolveConfig(config).then(result => {
+            expect(result).toBe(config)
+            done()
+        })
     })
-})
-
-describe ('UniStack throwAsyncError()', () => {
-    const unistack = new UniStack()
-    it ('should throw asynchronous error', (done) => {
-        const spy = jasmine.createSpy('spy')
-        const error = new Error('Fatal!')
-        const MockUniStack = Object.assign({}, UniStack)
-        unistack.throwError = (error) => {
-            spy(error)
+    it ('should resolve a config filename', (done) => {
+        const unistack = new UniStack()
+        const config = 'unistack.config.js'
+        const configFile = Path.join(envPath, config)
+        Fs.writeFileSync(configFile, basicConfig)
+        unistack.resolveConfig(config).then(result => {
+            expect(result).toEqual({
+                hello: 'from mocked unistack.config.js'
+            })
+            delete require.cache[configFile]
+            Fs.removeSync(configFile)
+            done()
+        })
+    })
+    it ('should emit error when file is not found', (done) => {
+        const config = 'unistack.config.js'
+        const configFile = Path.join(envPath, config)
+        const mockResult = {
+            message: 'INVALID_CONFIG_PATH',
+            template: { filename: configFile }
         }
-        unistack.throwAsyncError(error)
-        setTimeout((spy => {
-            return () => {
-                expect(spy).toHaveBeenCalledTimes(1)
-                expect(spy).toHaveBeenCalledWith(error)
-                done()
-            }
-        })(spy), 1)
+        const unistack = new UniStack()
+        unistack.resolveConfig(config).catch(result => {
+            expect(result).toEqual(mockResult)
+            done()
+        })
     })
 })
 
@@ -339,18 +279,24 @@ describe ('UniStack isEnvironmentEmpty()', () => {
         // reinstate backup
         Fs.renameSync(tmpEnvRename, envPath)
     })
-    it ('should throw error when environment directory is not empty', () => {
+    it ('should throw error when environment directory is not empty', (done) => {
         // set up new environment
         Fs.copySync(unistackEnvPath, envPath)
-        expect(() => unistack.isEnvironmentEmpty())
-        .toThrowError(Config.errors.installationDirectoryIsPopulated)
-        // remove new environment
-        Fs.removeSync(envPath)
+        const mockResult = {
+            message: 'INSTALLATION_DIRECTORY_IS_POPULATED'
+        }
+        unistack.isEnvironmentEmpty().catch(result => {
+            expect(result).toEqual(mockResult)
+            // remove new environment
+            Fs.removeSync(envPath)
+            done()
+        })
     })
-    it ('should remain silent when environment directory is empty', () => {
+    it ('should resolve when environment directory is empty', (done) => {
         // set up new environment
         Fs.ensureDirSync(envPath)
-        expect(() => unistack.isEnvironmentEmpty()).not.toThrowError()
+        unistack.isEnvironmentEmpty().then(done)
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
         // remove new environment
         Fs.removeSync(envPath)
     })
@@ -358,9 +304,9 @@ describe ('UniStack isEnvironmentEmpty()', () => {
 
 describe ('UniStack initSetup()', () => {
     const unistack = new UniStack()
-    unistack.isEnvironmentEmpty = () => {}
-    unistack.setupPackageJSON = () => {}
-    unistack.setupEnvironment = () => {}
+    unistack.isEnvironmentEmpty = () => Promise.resolve()
+    unistack.setupPackageJSON = () => Promise.resolve()
+    unistack.setupEnvironment = () => Promise.resolve()
     unistack.installJSPMDependencies = () => Promise.resolve()
     unistack.installNPMDependencies = () => Promise.resolve()
 
@@ -404,24 +350,41 @@ describe ('UniStack initSetup()', () => {
             done()
         })
     })
-    it ('should catch errors if something went wrong', (done) => {
+    it ('should throw errors if something went wrong', (done) => {
         const error = new Error('fatal')
-
-        let errors = 2
-        unistack.handleError = e => { // mock error function
-            expect(e).toBe(error)
-            if (--errors === 0) {
+        let errorCount = 5
+        unistack.emitEventToCLI = result => { // mock error function
+            expect(result).toEqual({ type: 'error', data: error })
+            if (--errorCount === 0) {
                 done()
             }
         }
 
         const promiseError = () => Promise.resolve().then(() => { throw error })
-        unistack.installNPMDependencies = promiseError
+        unistack.isEnvironmentEmpty = promiseError
         Promise.resolve()
         .then(() => unistack.initSetup())
         .then(() => {
-            unistack.installNPMDependencies = () => Promise.resolve()
+            unistack.isEnvironmentEmpty = () => Promise.resolve()
+            unistack.setupPackageJSON = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.initSetup())
+        .then(() => {
+            unistack.setupPackageJSON = () => Promise.resolve()
+            unistack.setupEnvironment = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.initSetup())
+        .then(() => {
+            unistack.setupEnvironment = () => Promise.resolve()
             unistack.installJSPMDependencies = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.initSetup())
+        .then(() => {
+            unistack.installJSPMDependencies = () => Promise.resolve()
+            unistack.installNPMDependencies = promiseError
             return Promise.resolve()
         })
         .then(() => unistack.initSetup())
@@ -446,27 +409,29 @@ describe ('UniStack setupEnvironment()', () => {
         // reinstate backup
         Fs.renameSync(tmpEnvRename, envPath)
     })
-    it ('should copy directories and files to environment directory', () => {
-        unistack.setupEnvironment()
-        const filenames = [
-            Path.join(envPath, 'src','client', 'index.js'),
-            Path.join(envPath, 'src','client', 'css', 'preprocessor', 'production.js'),
-            Path.join(envPath, 'src','client', 'css', 'preprocessor', 'development.js'),
-            Path.join(envPath, 'src','client', 'test', 'specs', 'index.js'),
-            Path.join(envPath, 'src','server', 'components', 'layout.js'),
-            Path.join(envPath, 'src','server', 'test', 'specs', 'index.js'),
-            Path.join(envPath, 'src','server', 'index.js'),
-            Path.join(envPath, 'src','shared', 'routes.js'),
-            Path.join(envPath, 'src','shared', 'actions', 'index.js'),
-            Path.join(envPath, 'src','shared', 'components', '404.js'),
-            Path.join(envPath, 'src','shared', 'components', 'App.js'),
-            Path.join(envPath, 'src','shared', 'components', 'HelloWorld.js'),
-            Path.join(envPath, 'src','shared', 'containers', 'index.js'),
-            Path.join(envPath, 'src','shared', 'reducers', 'index.js')
-        ]
-        filenames.forEach(filename => {
-            expect(() => Fs.lstatSync(filename)).not.toThrowError()
+    it ('should create files and folders in the environment directory', () => {
+        unistack.setupEnvironment().then(() => {
+            const filenames = [
+                Path.join(envPath, 'src','client', 'index.js'),
+                Path.join(envPath, 'src','client', 'css', 'preprocessor', 'production.js'),
+                Path.join(envPath, 'src','client', 'css', 'preprocessor', 'development.js'),
+                Path.join(envPath, 'src','client', 'test', 'specs', 'index.js'),
+                Path.join(envPath, 'src','server', 'components', 'layout.js'),
+                Path.join(envPath, 'src','server', 'test', 'specs', 'index.js'),
+                Path.join(envPath, 'src','server', 'index.js'),
+                Path.join(envPath, 'src','shared', 'routes.js'),
+                Path.join(envPath, 'src','shared', 'actions', 'index.js'),
+                Path.join(envPath, 'src','shared', 'components', '404.js'),
+                Path.join(envPath, 'src','shared', 'components', 'App.js'),
+                Path.join(envPath, 'src','shared', 'components', 'HelloWorld.js'),
+                Path.join(envPath, 'src','shared', 'containers', 'index.js'),
+                Path.join(envPath, 'src','shared', 'reducers', 'index.js')
+            ]
+            filenames.forEach(filename => {
+                expect(() => Fs.lstatSync(filename)).not.toThrowError()
+            })
         })
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
     })
 })
 
@@ -495,22 +460,28 @@ describe ('UniStack destroyProject()', () => {
 
 describe ('UniStack.setupPackageJSON()', () => {
     const unistack = new UniStack()
-    it ('should copy package.json file to environment directory', () => {
-        unistack.setupPackageJSON()
-        const packageJSON = Path.join(envPath, 'package.json')
-        expect(() => Fs.lstatSync(packageJSON)).not.toThrowError()
-        Fs.removeSync(packageJSON)
+    it ('should copy package.json file to environment directory', (done) => {
+        unistack.setupPackageJSON().then(() => {
+            const packageJSON = Path.join(envPath, 'package.json')
+            expect(() => Fs.lstatSync(packageJSON)).not.toThrowError()
+            Fs.removeSync(packageJSON)
+            done()
+        })
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
     })
-    it ('should populate jspm asset paths', () => {
-        unistack.setupPackageJSON()
-        const packageJSON = Path.join(envPath, 'package.json')
-        const packageJSONObj = require(packageJSON)
-        const jspm = packageJSONObj.jspm
-        expect(jspm.configFiles.jspm)
-        .toBe('node_modules/unistack/bootstrap/jspm.config.js')
-        expect(jspm.directories.packages)
-        .toBe('node_modules/unistack/bootstrap/jspm_packages')
-        Fs.removeSync(packageJSON)
+    it ('should populate jspm asset paths', (done) => {
+        unistack.setupPackageJSON().then(() => {
+            const packageJSON = Path.join(envPath, 'package.json')
+            const packageJSONObj = require(packageJSON)
+            const jspm = packageJSONObj.jspm
+            expect(jspm.configFiles.jspm)
+            .toBe('node_modules/unistack/bootstrap/jspm.config.js')
+            expect(jspm.directories.packages)
+            .toBe('node_modules/unistack/bootstrap/jspm_packages')
+            Fs.removeSync(packageJSON)
+            done()
+        })
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
     })
 })
 
@@ -538,9 +509,10 @@ if (!process.env.QUICK_TEST_RUN) {
         })
         it ('should install npm dependencies', (done) => {
             console.log('--Testing installation of NPM dependencies!')
-            unistack.isEnvironmentEmpty()
-            unistack.setupPackageJSON()
-            unistack.installNPMDependencies()
+            Promise.resolve()
+            .then(() => unistack.isEnvironmentEmpty())
+            .then(() => unistack.setupPackageJSON())
+            .then(() => unistack.installNPMDependencies())
             .then(passed => {
                 const packages = Path.join(envPath, 'node_modules')
                 expect(passed).toBe(true)
@@ -765,53 +737,11 @@ describe ('UniStack rebuildBundles()', () => {
                 }
             }
         }
-        // mock emit event
-        unistack.handleError = error => {
-            expect(error).toBe(mockError)
+        unistack.emitEventToCLI = result => { // mock error function
+            expect(result).toEqual({ type: 'error', data: mockError })
             done()
         }
         unistack.rebuildBundles({ node: true })
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
-    })
-})
-
-describe ('UniStack rebuildBundles()', () => {
-    let originalTimeout
-    beforeEach(() => {
-        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000
-    })
-    afterEach(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
-    })
-    it ('should only rebuild browser bundle', (done) => {
-        const unistack = new UniStack()
-        const browserSpy = jasmine.createSpy('browserSpy')
-        const nodeSpy = jasmine.createSpy('nodeSpy')
-        // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
-                        }
-                    }
-                }
-            }
-        }
-        unistack.rebuildBundles({ browser: true })
-        .then(() => {
-            expect(browserSpy).toHaveBeenCalledTimes(1)
-            expect(browserSpy).toHaveBeenCalledWith('browser')
-            expect(nodeSpy).not.toHaveBeenCalled()
-            done()
-        })
         .catch(e => console.log(e.stack)) // catch errors in previous blocks
     })
 })
@@ -965,11 +895,10 @@ describe ('UniStack startDevEnvironment()', () => {
     })
     it ('should throw errors if something went wrong', (done) => {
         const error = new Error('fatal')
-
-        let errors = 5
-        unistack.handleError = e => { // mock error function
-            expect(e).toBe(error)
-            if (--errors === 0) {
+        let errorCount = 5
+        unistack.emitEventToCLI = result => { // mock error function
+            expect(result).toEqual({ type: 'error', data: error })
+            if (--errorCount === 0) {
                 done()
             }
         }
@@ -1045,10 +974,10 @@ describe ('UniStack stopDevEnvironment()', () => {
     it ('should throw errors if something went wrong', (done) => {
         const error = new Error('fatal')
 
-        let errors = 3
-        unistack.handleError = e => { // mock error function
-            expect(e).toBe(error)
-            if (--errors === 0) {
+        let errorCount = 3
+        unistack.emitEventToCLI = result => { // mock error function
+            expect(result).toEqual({ type: 'error', data: error })
+            if (--errorCount === 0) {
                 done()
             }
         }
@@ -1144,8 +1073,9 @@ if (!process.env.QUICK_TEST_RUN) {
             })
             it ('should install jspm dependencies.', (done) => {
                 const packagesPath = Path.join(envUnistackBootstrapPath, 'jspm_packages')
-                unistack.setupPackageJSON()
-                unistack.installJSPMDependencies()
+                Promise.resolve()
+                .then(() => unistack.setupPackageJSON())
+                .then(() => unistack.installJSPMDependencies())
                 .then(() => {
                     expect(() => Fs.lstatSync(Path.join(packagesPath, 'npm')))
                     .not.toThrowError()

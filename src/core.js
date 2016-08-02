@@ -65,72 +65,80 @@ class UniStack {
         state.cli.ipc.emit('core::status', data)
     }
     resolveConfig(filename) {
-        if (!filename) {
-            filename = {}
-        }
-        if (_.isObject(filename)) {
-            return filename
-        }
-        let configWrapper
-        const system = this.getSystemConstants()
-        const configFilename = Path.join(system.environment.root, filename)
-        try {
-            configWrapper = require(configFilename)
-        } catch (e) {
-            throw new Error(
-                Config.errors.invalidConfigPath
-                .replace('{{filename}}', configFilename)
-            )
-        }
-        const config = Object.seal({
-            options: null,
-            set: function (opts) {
-               this.options = opts
+        return new Promise((resolve, reject) => {
+            if (!filename) {
+                filename = {}
             }
+            if (_.isObject(filename)) {
+                return resolve(filename)
+            }
+            let configWrapper
+            const system = this.getSystemConstants()
+            const configFilename = Path.join(system.environment.root, filename)
+            try {
+                configWrapper = require(configFilename)
+            } catch (e) {
+                return reject({
+                    message: 'INVALID_CONFIG_PATH',
+                    template: { filename: configFilename }
+                })
+            }
+            const config = Object.seal({
+                options: null,
+                set: function (opts) {
+                   this.options = opts
+                }
+            })
+            configWrapper(config)
+            resolve(config.options)
         })
-        configWrapper(config)
-        return config.options
     }
     initSetup() {
-        this.isEnvironmentEmpty()
-        this.setupPackageJSON()
-        this.setupEnvironment()
         return Promise.resolve()
-            .then(this.installNPMDependencies.bind(this))
-            .then(this.installJSPMDependencies.bind(this))
-            .catch(e =>
-                this.handleError(e, {hook: this.throwAsyncError.bind(this)})
-            )
+        .then(() => this.isEnvironmentEmpty())
+        .then(() => this.setupPackageJSON())
+        .then(() => this.setupEnvironment())
+        .then(() => this.installNPMDependencies())
+        .then(() => this.installJSPMDependencies())
+        .catch(data => this.emitEventToCLI({ type: 'error', data }))
     }
     isEnvironmentEmpty() {
-        const system = this.getSystemConstants()
-        if (Fs.readdirSync(system.environment.root).length > 0) {
-            throw new Error(Config.errors.installationDirectoryIsPopulated)
-        }
+        return new Promise((resolve, reject) => {
+            const system = this.getSystemConstants()
+            if (Fs.readdirSync(system.environment.root).length > 0) {
+                reject({ message: 'INSTALLATION_DIRECTORY_IS_POPULATED' })
+            }
+            resolve(true)
+        })
     }
     setupEnvironment() {
-        const system = this.getSystemConstants()
-        Fs.copySync(
-            Path.join(system.root, 'environment'),
-            system.environment.root
-        )
+        return new Promise((resolve, reject) => {
+            const system = this.getSystemConstants()
+            const envPath = system.environment.root
+            Fs.copySync(Path.join(system.root, 'environment'), envPath)
+            resolve(true)
+        })
     }
     setupPackageJSON() {
-        const system = this.getSystemConstants()
-        const unistackBootstrapPath = Path.join(system.root, 'bootstrap')
-        const packageJSON = Path.join(unistackBootstrapPath, 'package.json')
+        return new Promise((resolve, reject) => {
+            const system = this.getSystemConstants()
+            const unistackBootstrapPath = Path.join(system.root, 'bootstrap')
+            const packageJSON = Path.join(unistackBootstrapPath, 'package.json')
 
-        const packageJSONObj = require(packageJSON)
-        const jspmConfigFiles = packageJSONObj.jspm.configFiles
-        const jspmDirectories = packageJSONObj.jspm.directories
+            const packageJSONObj = require(packageJSON)
+            const jspmConfigFiles = packageJSONObj.jspm.configFiles
+            const jspmDirectories = packageJSONObj.jspm.directories
 
-        jspmConfigFiles.jspm = 'node_modules/unistack/bootstrap/jspm.config.js'
-        jspmDirectories.packages = 'node_modules/unistack/bootstrap/jspm_packages'
+            jspmConfigFiles.jspm = 'node_modules/unistack/bootstrap/jspm.config.js'
+            jspmDirectories.packages = 'node_modules/unistack/bootstrap/jspm_packages'
 
-        Fs.writeFileSync(
-            Path.join(system.environment.root, 'package.json'),
-            JSON.stringify(packageJSONObj, null, '\t')
-        )
+            Fs.writeFileSync(
+                Path.join(system.environment.root, 'package.json'),
+                JSON.stringify(packageJSONObj, null, '\t')
+            )
+
+            resolve(true)
+        })
     }
     installNPMDependencies(testCommand) {
         const system = this.getSystemConstants()
@@ -168,14 +176,14 @@ class UniStack {
         .then(() => this.initReloader())
         .then(() => this.watchFiles())
         .then(() => this.runNodeBundle())
-        .catch(e => this.handleError(e, false, this.throwAsyncError.bind(this)))
+        .catch(data => this.emitEventToCLI({ type: 'error', data }))
     }
     stopDevEnvironment() {
         return Promise.resolve()
         .then(() => this.haltNodeBundle())
         .then(() => this.destroyReloader())
         .then(() => this.destroyWatcher())
-        .catch(e => this.handleError(e, false, this.throwAsyncError.bind(this)))
+        .catch(data => this.emitEventToCLI({ type: 'error', data }))
     }
     haltNodeBundle() {
         const state = this.getState()
@@ -231,9 +239,7 @@ class UniStack {
         }
 
         return promise
-        .catch(e =>
-            this.handleError(e, {hook: this.throwAsyncError.bind(this)})
-        )
+        .catch(data => this.emitEventToCLI({ type: 'error', data }))
     }
     handleFileChange(filename) {
         const state = this.getState()
@@ -361,26 +367,6 @@ class UniStack {
             ServerDestroy(server)
             return state.environment.server = server
         })
-    }
-    throwError(error) {
-        throw error
-    }
-    throwAsyncError(error) {
-        setTimeout(() => this.throwError(error), 0)
-        return false
-    }
-    handleError(error, options = {}) {
-        if (typeof error === 'string') {
-            error = new Error(error)
-        }
-        if (!options.warning) {
-            const hook = options.hook
-            if (typeof hook === 'function' && hook(error) === false) {
-                return
-            }
-            this.throwError(error)
-        }
-        console.warn(error.message);
     }
 }
 
