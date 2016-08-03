@@ -160,3 +160,79 @@ describe ('UniStackCLI statusNotFound()', () => {
         expect(unistack.statusNotFound).toHaveBeenCalledWith(status)
     })
 })
+
+describe ('UniStackCLI handleError()', () => {
+    const unistack = new UniStackCLI()
+    it ('should throw error when error object is present', () => {
+        expect(() => unistack.handleError(new Error('Fatal!')))
+        .toThrowError('Fatal!')
+    })
+    it ('should throw error when error string is present', () => {
+        expect(() => unistack.handleError('Fatal!')).toThrowError('Fatal!')
+    })
+    it ('should log warning message when warning option is present', () => {
+        const consoleWarn = console.warn
+        console.warn = (message) => {
+            expect(message).toBe('Warning!')
+        }
+        const warning = true
+        expect(() => unistack.handleError(new Error('Warning!'), { warning }))
+        .not.toThrowError()
+        console.warn = consoleWarn
+    })
+    it ('should log warning message when error string and warning option is present', () => {
+        const consoleWarn = console.warn
+        console.warn = (message) => {
+            expect(message).toBe('Warning!')
+        }
+        const warning = true
+        expect(() => unistack.handleError('Warning!', { warning }))
+        .not.toThrowError()
+        console.warn = consoleWarn
+    })
+    it ('should call hook before fatal error when a hook function is provided', (done) => {
+        const spy = jasmine.createSpy('spy')
+        const hook = (error) => {
+            spy(error)
+            return false
+        }
+        const error = new Error('Fatal!')
+        new Promise((revolve, reject) => {
+            reject()
+        })
+        .catch(e => {
+            unistack.handleError(error, { hook })
+            expect(spy).toHaveBeenCalledTimes(1)
+            expect(spy).toHaveBeenCalledWith(error)
+            done()
+        })
+    })
+})
+
+describe ('UniStackCLI throwError()', () => {
+    const unistack = new UniStackCLI()
+    it ('should throw error', () => {
+        expect(() => unistack.throwError(new Error('Fatal!')))
+        .toThrowError('Fatal!')
+    })
+})
+
+describe ('UniStackCLI throwAsyncError()', () => {
+    const unistack = new UniStackCLI()
+    it ('should throw asynchronous error', (done) => {
+        const spy = jasmine.createSpy('spy')
+        const error = new Error('Fatal!')
+        const MockUniStack = Object.assign({}, UniStackCLI)
+        unistack.throwError = (error) => {
+            spy(error)
+        }
+        unistack.throwAsyncError(error)
+        setTimeout((spy => {
+            return () => {
+                expect(spy).toHaveBeenCalledTimes(1)
+                expect(spy).toHaveBeenCalledWith(error)
+                done()
+            }
+        })(spy), 1)
+    })
+})

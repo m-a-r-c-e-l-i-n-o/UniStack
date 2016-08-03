@@ -74,6 +74,26 @@ class UniStackCLI {
     statusNotFound(status) {
         console.error('Unknown status from core:', status.type, status.data)
     }
+    throwError(error) {
+        throw error
+    }
+    throwAsyncError(error) {
+        setTimeout(() => this.throwError(error), 0)
+        return false
+    }
+    handleError(error, options = {}) {
+        if (typeof error === 'string') {
+            error = new Error(error)
+        }
+        if (!options.warning) {
+            const hook = options.hook
+            if (typeof hook === 'function' && hook(error) === false) {
+                return
+            }
+            this.throwError(error)
+        }
+        console.warn(error.message);
+    }
 }
 
 export default UniStackCLI
