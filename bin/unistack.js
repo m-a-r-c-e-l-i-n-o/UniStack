@@ -1,2 +1,5 @@
 #!/usr/bin/env node
-(new (require('../dist/cli.js').default)).start().then(process.exit)
+var UniStackCLI = require('../dist/cli.js').default
+var unistackCLI = new UniStackCLI()
+
+unistackCLI.start().then(process.exit)

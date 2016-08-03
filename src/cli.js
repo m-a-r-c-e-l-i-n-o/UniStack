@@ -21,8 +21,10 @@ class UniStackCLI {
         if (typeof this.cache.system === 'object') {
             return this.cache.system
         }
+
         const unistackPath = Path.join(__dirname, '..')
         const envPath = Config.environment.directory
+
         return this.cache.system = Object.freeze({
             environment: Object.freeze({
                 root: envPath,
@@ -36,15 +38,14 @@ class UniStackCLI {
     start() {
         return this.initCoreProcess()
     }
-    initCoreProcess(mockInstanceFile) {
+    initCoreProcess() {
+        const state = this.getState()
+        const system = this.getSystemConstants()
+        const instanceFile = Path.join(system.root, 'bin', 'core-instance.js')
+        const cwd = system.environment.root
+
         return new Promise((resolve, reject) => {
-            const state = this.getState()
-            const system = this.getSystemConstants()
-            const instanceFile = Path.join(system.root, 'bin', 'core-instance.js')
-            const cwd = system.environment.root
-            const coreProcess = ChildProcess.fork(
-                mockInstanceFile || instanceFile, [], { cwd }
-            )
+            const coreProcess = ChildProcess.fork(instanceFile, [], { cwd })
             const coreProcessIPC = IPC(coreProcess)
             const onReady = ((coreProcess, coreProcessIPC, resolve) => () => {
                 const processWrapper = {

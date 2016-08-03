@@ -171,18 +171,18 @@ describe ('UniStack listenToCLI()', () => {
         }
         Mock('ipc-event-emitter', { default: () => mockIPC })
         const unistack = new UniStack()
-        unistack.handleCommand = () => {}
-        spyOn(unistack, 'handleCommand').and.callThrough()
+        unistack.handleCLICommand = () => {}
+        spyOn(unistack, 'handleCLICommand').and.callThrough()
         unistack.listenToCLI().then(() => {
             Mock.stopAll()
             done()
         })
-        expect(unistack.handleCommand).toHaveBeenCalledTimes(1)
-        expect(unistack.handleCommand).toHaveBeenCalledWith(mockRandomEvent)
+        expect(unistack.handleCLICommand).toHaveBeenCalledTimes(1)
+        expect(unistack.handleCLICommand).toHaveBeenCalledWith(mockRandomEvent)
     })
 })
 
-describe ('UniStack handleCommand()', () => {
+describe ('UniStack handleCLICommand()', () => {
     it ('should handle unknown status updates from core', () => {
         const mockCommand = {
             type: 'unknown_status',
@@ -195,7 +195,7 @@ describe ('UniStack handleCommand()', () => {
         const unistack = new UniStack
         unistack.emitEventToCLI = () => {}
         spyOn(unistack, 'emitEventToCLI').and.callThrough()
-        unistack.handleCommand(mockCommand)
+        unistack.handleCLICommand(mockCommand)
         expect(unistack.emitEventToCLI).toHaveBeenCalledTimes(1)
         expect(unistack.emitEventToCLI).toHaveBeenCalledWith(mockStatus)
     })
@@ -1121,13 +1121,15 @@ describe ('UniStack destroyWatcher()', () => {
         unistack.cache.state = {
             watcher: {
                 server: {
-                    close: () => {
-                        done()
-                    }
+                    close: jasmine.createSpy('close')
                 }
             }
         }
-        unistack.destroyWatcher().then(done)
+        unistack.destroyWatcher().then(() => {
+            expect(unistack.cache.state.watcher.server.close)
+            .toHaveBeenCalledTimes(1)
+            done()
+        })
     })
 })
 

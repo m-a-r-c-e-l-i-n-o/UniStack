@@ -104,7 +104,8 @@ describe ('UniStackCLI initCoreProcess()', () => {
     })
     it ('should handle status updates from the core', (done) => {
         const unistack = new UniStackCLI
-        const mockCoreInstancePath = Path.join(unistackTmpPath, 'core-instance.js')
+        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test')
+        const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
         const content = `
             #!/usr/bin/env node
             var IPC = require('ipc-event-emitter').default
@@ -115,18 +116,26 @@ describe ('UniStackCLI initCoreProcess()', () => {
                 data: 'nothing'
             })
         `
-        Fs.writeFileSync(mockCoreInstancePath, content.trim())
-        Fs.chmodSync(mockCoreInstancePath, '0755')
+        unistack.cache = {
+            system: {
+                root: unistackTmpPath,
+                environment: {
+                    root: testPath
+                }
+            }
+        }
+        Fs.outputFileSync(mockCoreInstanceFile, content.trim())
+        Fs.chmodSync(mockCoreInstanceFile, '0755')
         let globalCoreProcess
         unistack.handleStatus = (status) => {
             expect(status.type).toBe('something_other_than_ready')
             expect(status.data).toBe('nothing')
             expect(unistack.handleStatus).toHaveBeenCalledTimes(1)
-            Fs.removeSync(mockCoreInstancePath)
+            Fs.removeSync(mockCoreInstanceFile)
             globalCoreProcess.destroy(done)
         }
         spyOn(unistack, 'handleStatus').and.callThrough()
-        unistack.initCoreProcess(mockCoreInstancePath).then(({ coreProcess }) => {
+        unistack.initCoreProcess().then(({ coreProcess }) => {
             globalCoreProcess = coreProcess
         })
         .catch(e => console.error(e.stack))
