@@ -35,8 +35,15 @@ class UniStackCLI {
             root: unistackPath
         })
     }
-    start() {
-        return this.initCoreProcess()
+    init() {
+        return new Promise((resolve, reject) => {
+            this.initCoreProcess().then(({ coreProcess }) => {
+                coreProcess.on('exit', exitCode => {
+                    this.handleCoreProcessExitStatus(exitCode)
+                    resolve(exitCode)
+                })
+            })
+        })
     }
     initCoreProcess() {
         const state = this.getState()
@@ -65,6 +72,27 @@ class UniStackCLI {
                 this.handleStatus(status)
             })
         })
+    }
+    handleCoreProcessExitStatus(exitCode) {
+        let status
+        switch (exitCode) {
+            case 0:
+                status = { type: 'success', data: { message: 'UNKNOWN_CORE_EXIT' }}
+                break
+            case 100:
+                status = { type: 'success', data: { message: 'CORE_EXIT' }}
+                break
+            case 1:
+                status = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT' }}
+                break
+            case 101:
+                status = { type: 'error', data: { message: 'CORE_EXIT' }}
+                break
+            default:
+                status = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT_CODE' }}
+        }
+        this.handleStatus(status)
+        return status
     }
     handleStatus(status) {
         switch(status.type) {

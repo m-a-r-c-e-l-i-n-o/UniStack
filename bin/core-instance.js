@@ -2,4 +2,7 @@
 var UniStack = require('../dist/core.js').default
 var unistack = new UniStack()
 
-unistack.listenToCLI().then(process.exit).catch(e => console.log(e.stack))
+unistack
+.listenToCLI()
+.then(() => process.exit(100))
+.catch(() => process.exit(101))

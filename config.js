@@ -48,5 +48,21 @@ Config.message.error.NO_ENVIRONMENT_PACKAGE_JSON_FILE = `
     that this is NOT a unistack environment, delete all files in the directory
     and run the "init" command below to setup a new environment.
 `
-
+Config.message.error.EXIT = `
+    UniStack exited unexpectedly with the following error:
+    {{error_stack}}
+`
+Config.message.error.CORE_EXIT = `
+    The core process has exited unexpectedly, for the following reason:
+    {{error_stack}}
+`
+Config.message.error.UNKNOWN_CORE_EXIT = `
+    The core process has exited unexpectedly for unknown reasons.
+`
+Config.message.success.CORE_EXIT = `
+    The core process has exited succesfully.
+`
+Config.message.success.UNKNOWN_CORE_EXIT = `
+    The core process has exited unexpectedly, there doesn't seem to be errors.
+`
 module.exports = Config

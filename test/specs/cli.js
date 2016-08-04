@@ -1,5 +1,6 @@
 import Fs from 'fs-extra'
 import Path from 'path'
+import ChildProcess from 'child_process'
 import UniStackCLI from '../../src/cli.js'
 import State from '../../src/cli-state.js'
 import Config from '../../config.js'
@@ -66,14 +67,81 @@ describe ('UniStackCLI getSystemConstants()', () => {
     })
 })
 
-describe ('UniStackCLI start()', () => {
-    it ('should initiate connection with core', (done) => {
+describe ('UniStackCLI init()', () => {
+    it ('should return a promise and handle core process exit', (done) => {
         const unistack = new UniStackCLI
-        unistack.initCoreProcess = () => Promise.resolve()
-        spyOn(unistack, 'initCoreProcess').and.callThrough()
-        unistack.start().then(done)
+        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test')
+        const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
+        const content = `
+            #!/usr/bin/env node
+            process.exit(111)
+        `
+        unistack.cache = {
+            system: {
+                root: unistackTmpPath,
+                environment: {
+                    root: testPath
+                }
+            }
+        }
+
+        Fs.outputFileSync(mockCoreInstanceFile, content.trim())
+        Fs.chmodSync(mockCoreInstanceFile, '0755')
+
+        unistack.initCoreProcess = () => {
+            const coreProcess = ChildProcess.fork(mockCoreInstanceFile, [])
+            return Promise.resolve({ coreProcess })
+        }
+
+        spyOn(unistack, 'handleCoreProcessExitStatus')
+        unistack.init().then(exitCode => {
+            expect(unistack.handleCoreProcessExitStatus).toHaveBeenCalledTimes(1)
+            expect(unistack.handleCoreProcessExitStatus).toHaveBeenCalledWith(exitCode)
+            expect(exitCode).toBe(111)
+            done()
+        })
         .catch(e => console.error(e.stack))
-        expect(unistack.initCoreProcess).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe ('UniStackCLI handleCoreProcessExitStatus()', () => {
+    it ('should handle unknown core process exit', () => {
+        const unistack = new UniStackCLI
+        const mockExitStatus = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT_CODE' }}
+        unistack.handleStatus = () => {}
+        expect(unistack.handleCoreProcessExitStatus()).toEqual(mockExitStatus)
+    })
+    it ('should handle unknown, but successful core process exit', () => {
+        const unistack = new UniStackCLI
+        const mockExitStatus = { type: 'success', data: { message: 'UNKNOWN_CORE_EXIT' }}
+        unistack.handleStatus = () => {}
+        expect(unistack.handleCoreProcessExitStatus(0)).toEqual(mockExitStatus)
+    })
+    it ('should handle successful core process exit', () => {
+        const unistack = new UniStackCLI
+        const mockExitStatus = { type: 'success', data: { message: 'CORE_EXIT' }}
+        unistack.handleStatus = () => {}
+        expect(unistack.handleCoreProcessExitStatus(100)).toEqual(mockExitStatus)
+    })
+    it ('should handle unknown erred core process exit', () => {
+        const unistack = new UniStackCLI
+        const mockExitStatus = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT' }}
+        unistack.handleStatus = () => {}
+        expect(unistack.handleCoreProcessExitStatus(1)).toEqual(mockExitStatus)
+    })
+    it ('should handle erred core process exit', () => {
+        const unistack = new UniStackCLI
+        const mockExitStatus = { type: 'error', data: { message: 'CORE_EXIT' }}
+        unistack.handleStatus = () => {}
+        expect(unistack.handleCoreProcessExitStatus(101)).toEqual(mockExitStatus)
+    })
+    it ('should call the "handleStatus" method', () => {
+        const unistack = new UniStackCLI
+        const mockExitStatus = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT_CODE' }}
+        spyOn(unistack, 'handleStatus')
+        unistack.handleCoreProcessExitStatus()
+        expect(unistack.handleStatus).toHaveBeenCalledTimes(1)
+        expect(unistack.handleStatus).toHaveBeenCalledWith(mockExitStatus)
     })
 })
 
@@ -86,9 +154,10 @@ describe ('UniStackCLI initCoreProcess()', () => {
     afterEach(() => {
         jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
     })
-    it ('should start message server', (done) => {
+    it ('should start core process and open IPC channel', (done) => {
         const unistack = new UniStackCLI
-        unistack.initCoreProcess().then(({ coreProcess }) => {
+        unistack.initCoreProcess().then(({ coreProcess, coreProcessIPC }) => {
+            expect(coreProcessIPC).toBeDefined()
             coreProcess.destroy(done)
         })
         .catch(e => console.error(e.stack))
@@ -124,8 +193,10 @@ describe ('UniStackCLI initCoreProcess()', () => {
                 }
             }
         }
+
         Fs.outputFileSync(mockCoreInstanceFile, content.trim())
         Fs.chmodSync(mockCoreInstanceFile, '0755')
+
         let globalCoreProcess
         unistack.handleStatus = (status) => {
             expect(status.type).toBe('something_other_than_ready')
