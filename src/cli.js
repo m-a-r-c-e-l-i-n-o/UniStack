@@ -1,6 +1,7 @@
 'use strict'
 import Path from 'path'
 import Argv from 'argv'
+import Inquirer from 'inquirer'
 import TreeKill from 'tree-kill'
 import ChildProcess from 'child_process'
 import IPC from 'ipc-event-emitter'
@@ -99,6 +100,19 @@ class UniStackCLI {
             default:
                 this.statusNotFound(status)
         }
+    }
+    promptForCommand() {
+        const questions = [{
+            type: 'input',
+            name: 'command',
+            message: Config.message.instruction.PROMPT_FOR_COMMAND
+        }]
+        const prompt = Inquirer.createPromptModule()
+        const promise = prompt(questions)
+        promise.then(answers => {
+            return answers
+        })
+        return promise
     }
     statusNotFound(status) {
         console.error('Unknown status from core:', status.type, status.data)

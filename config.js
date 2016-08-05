@@ -5,7 +5,8 @@ var Config = {
     message: {
         success: {},
         error: {},
-        update: {}
+        update: {},
+        instruction: {}
     },
     server: {},
     hostName: 'localhost',
@@ -64,5 +65,8 @@ Config.message.success.CORE_EXIT = `
 `
 Config.message.success.UNKNOWN_CORE_EXIT = `
     The core process has exited unexpectedly, there doesn't seem to be errors.
+`
+Config.message.instruction.PROMPT_FOR_COMMAND = `
+    What would you like to do next?
 `
 module.exports = Config

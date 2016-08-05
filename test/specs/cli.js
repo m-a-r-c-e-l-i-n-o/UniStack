@@ -1,9 +1,11 @@
 import Fs from 'fs-extra'
 import Path from 'path'
 import ChildProcess from 'child_process'
+import BDDStdin from '../lib/bdd-stdin.js'
 import UniStackCLI from '../../src/cli.js'
 import State from '../../src/cli-state.js'
 import Config from '../../config.js'
+import Inquirer from 'inquirer'
 
 const unistackPath = Path.join(__dirname, '..', '..')
 const unistackTmpPath = Path.join(unistackPath, 'tmp')
@@ -316,3 +318,17 @@ describe ('UniStackCLI throwAsyncError()', () => {
         })(spy), 1)
     })
 })
+
+describe ('UniStack promptForCommand()', () => {
+    it ('should prompt for command', (done) => {
+        const unistack = new UniStackCLI()
+        const promise = unistack.promptForCommand()
+        promise.ui.rl.emit('line', 'start')
+        promise.then(result => {
+            expect(result).toEqual({ command: 'start' })
+            done()
+        })
+        .catch(e => console.error(e.stack)) // catch errors in previous blocks
+    })
+})
+
