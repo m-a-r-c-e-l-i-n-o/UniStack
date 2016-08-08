@@ -332,3 +332,18 @@ describe ('UniStack promptForCommand()', () => {
     })
 })
 
+describe ('UniStack validateCommand()', () => {
+    it ('should return true if value is not empty', () => {
+        const unistack = new UniStackCLI()
+        expect(unistack.validateCommand('Hello World!')).toBe(true)
+    })
+    it ('should return error message if value is empty', () => {
+        const unistack = new UniStackCLI()
+        const errorMessage = Config.message.instruction.EMPTY_COMMAND
+        let value
+        value = ''
+        expect(unistack.validateCommand(value)).toBe(errorMessage)
+        value = '\n'
+        expect(unistack.validateCommand(value)).toBe(errorMessage)
+    })
+})

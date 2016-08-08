@@ -69,4 +69,7 @@ Config.message.success.UNKNOWN_CORE_EXIT = `
 Config.message.instruction.PROMPT_FOR_COMMAND = `
     What would you like to do next?
 `
+Config.message.instruction.EMPTY_COMMAND = `
+    Please enter a valid command.
+`
 module.exports = Config

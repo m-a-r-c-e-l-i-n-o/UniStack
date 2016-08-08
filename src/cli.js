@@ -61,7 +61,8 @@ class UniStackCLI {
                     destroy: callback => {
                         coreProcess.disconnect()
                         TreeKill(coreProcess.pid, 'SIGKILL', callback)
-                    }
+                    },
+                    validate: this.validateCommand.bind(this)
                 }
                 state.processes.core = processWrapper
                 state.messenger.core = coreProcessIPC
@@ -73,6 +74,12 @@ class UniStackCLI {
                 this.handleStatus(status)
             })
         })
+    }
+    validateCommand(value) {
+        if (value.trim()) {
+            return true
+        }
+        return Config.message.instruction.EMPTY_COMMAND
     }
     handleCoreProcessExitStatus(exitCode) {
         let status
