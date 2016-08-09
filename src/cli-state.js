@@ -4,6 +4,9 @@ const cliState = {
     },
     messenger: {
         core: null
+    },
+    transport: {
+        message: null
     }
 }
 
