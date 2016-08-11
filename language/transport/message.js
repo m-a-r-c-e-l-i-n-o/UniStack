@@ -17,6 +17,9 @@ Message.success.UNKNOWN_CORE_EXIT = `
 The core process has exited unexpectedly,
 there doesn't seem to be errors.
 `
+Message.success.MOCK_TEST_MESSAGE = `
+This should only be used for testing purposes.
+`
 
 // UPDATE MESSAGES
 Message.update.PROMPT_FOR_COMMAND = `
@@ -32,7 +35,7 @@ Please enter a valid command.
 `
 Message.error.INVALID_CONFIG_PATH = `
 Please provide a valid configuration filename.
-The filename received ({{filename}}) could not be loaded.
+The filename received ({{FILENAME}}) could not be loaded.
 `
 Message.error.INSTALLATION_DIRECTORY_IS_POPULATED = `
 This directory must be empty before installation can commence.
@@ -89,4 +92,8 @@ The following template place holders are missing or not valid:
 "{{MISMATCHED_PLACE_HOLDERS}}"
 Valid places holders: "{{PLACE_HOLDERS}}"
 * Remember, the place holders' text should be all uppercase!
+`
+Message.error.UNEXPECTED_CORE_ERROR = `
+The core process has thrown an unexpected error.
+{{ERROR_STACK}}
 `

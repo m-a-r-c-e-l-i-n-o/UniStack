@@ -8,6 +8,7 @@ import { createServer as CreateServer } from 'http'
 import UniStack from '../../src/core.js'
 import State from '../../src/core-state.js'
 import Config from '../../config.js'
+import Transport from '../../src/transport/index.js'
 import BDDStdin from '../lib/bdd-stdin.js'
 import ServerDestroy from 'server-destroy'
 import Mock from 'mock-require'
@@ -36,6 +37,7 @@ const basicPackageJSON = `{
   "author": "",
   "license": "ISC"
 }`
+const Message = Transport.create('message')
 
 describe ('UniStack', () => {
     it ('should be a function.', () => {
@@ -91,19 +93,59 @@ describe ('UniStack getSystemConstants()', () => {
     })
 })
 
+describe ('UniStack initTransports()', () => {
+    it ('should create a message transport', (done) => {
+        const unistack = new UniStack()
+        const state = { transport: {} }
+        const messageTransport = {}
+        const transport = { create: type => {
+            expect(type).toBe('message')
+            done()
+        }}
+        unistack.getTransport = () => transport.create
+        unistack.getState = () => state
+        unistack.initTransports()
+    })
+    it ('should store the message in the state object', () => {
+        const unistack = new UniStack()
+        const state = { transport: {} }
+        const messageTransport = {}
+        const transport = { create: () => messageTransport }
+
+        unistack.getTransport = () => transport.create
+        unistack.getState = () => state
+        unistack.initTransports()
+
+        expect(state.transport.message).toBe(messageTransport)
+    })
+})
+
+describe ('UniStack getTransport()', () => {
+    it ('should return create message function', () => {
+        const unistack = new UniStack()
+        expect(unistack.getTransport('message'))
+        .toEqual(Transport.create)
+    })
+})
+
 describe ('UniStack listenToCLI()', () => {
-    it ('should resolve the promise when a "terminate" command is emitted', (done) => {
+    it ('should resolve the promise when a "CORE_CLOSE" message is emitted', (done) => {
         const mockIPC = {
-            fix: jasmine.createSpy('fix'),
+            fix: () => {},
             on: (event, callback) => {
-                const mockTerminationEvent = { type: 'terminate' }
-                callback(mockTerminationEvent)
+                callback({ type: 'success', action: 'CORE_CLOSE' })
             }
         }
         Mock('ipc-event-emitter', { default: () => mockIPC })
         const unistack = new UniStack()
+        unistack.getState = () => {
+            return {
+                transport: { message: () => {} },
+                cli: { ipc: null }
+            }
+        }
         unistack.listenToCLI().then(() => {
-            Mock.stopAll()
+            Mock.stop('ipc-event-emitter')
             done()
         })
     })
@@ -111,15 +153,19 @@ describe ('UniStack listenToCLI()', () => {
         const mockIPC = {
             fix: () => {},
             on: (event, callback) => {
-                const mockTerminationEvent = { type: 'terminate' }
-                callback(mockTerminationEvent)
+                callback({ type: 'success', action: 'CORE_CLOSE' })
             }
         }
         Mock('ipc-event-emitter', { default: () => mockIPC })
         const unistack = new UniStack()
+        const state = {
+            transport: { message: () => {} },
+            cli: { ipc: null }
+        }
+        unistack.getState = () => state
         unistack.listenToCLI().then(ipc => {
-            expect(unistack.cache.state.cli.ipc).toBe(ipc)
-            Mock.stopAll()
+            expect(state.cli.ipc).toBe(ipc)
+            Mock.stop('ipc-event-emitter')
             done()
         })
         .catch(e => console.error(e.stack))
@@ -128,109 +174,70 @@ describe ('UniStack listenToCLI()', () => {
         const mockIPC = {
             fix: jasmine.createSpy('fix'),
             on: (event, callback) => {
-                const mockTerminationEvent = { type: 'terminate' }
-                callback(mockTerminationEvent)
+                callback({ type: 'success', action: 'CORE_CLOSE' })
             }
         }
         Mock('ipc-event-emitter', { default: () => mockIPC })
         const unistack = new UniStack()
+        const readyMessage = { type: 'success', action: 'CORE_READY' }
+        unistack.getState = () => {
+            return {
+                transport: {
+                    message: () => readyMessage
+                },
+                cli: { ipc: null }
+            }
+        }
         unistack.listenToCLI().then(() => {
-            Mock.stopAll()
+            Mock.stop('ipc-event-emitter')
             done()
         })
         expect(mockIPC.fix).toHaveBeenCalledTimes(1)
-        expect(mockIPC.fix).toHaveBeenCalledWith('core::ready')
-    })
-    it ('should subscribe to cli commands', (done) => {
-        const mockIPC = {
-            fix: () => {},
-            on: (event, callback) => {
-                const mockTerminationEvent = { type: 'terminate' }
-                callback(mockTerminationEvent)
-            }
-        }
-        Mock('ipc-event-emitter', { default: () => mockIPC })
-        const unistack = new UniStack()
-        spyOn(mockIPC, 'on').and.callThrough()
-        unistack.listenToCLI().then(() => {
-            Mock.stopAll()
-            done()
-        })
-        expect(mockIPC.on).toHaveBeenCalledTimes(1)
-        expect(mockIPC.on).toHaveBeenCalledWith('cli::command', jasmine.any(Function))
-    })
-    it ('should handle command from cli', (done) => {
-        const mockRandomEvent = { type: 'something_other_than_terminate' }
-        const mockIPC = {
-            fix: jasmine.createSpy('fix'),
-            on: (event, callback) => {
-                callback(mockRandomEvent)
-                const mockTerminationEvent = { type: 'terminate' }
-                callback(mockTerminationEvent)
-            }
-        }
-        Mock('ipc-event-emitter', { default: () => mockIPC })
-        const unistack = new UniStack()
-        unistack.handleCLICommand = () => {}
-        spyOn(unistack, 'handleCLICommand').and.callThrough()
-        unistack.listenToCLI().then(() => {
-            Mock.stopAll()
-            done()
-        })
-        expect(unistack.handleCLICommand).toHaveBeenCalledTimes(1)
-        expect(unistack.handleCLICommand).toHaveBeenCalledWith(mockRandomEvent)
-    })
-})
-
-describe ('UniStack handleCLICommand()', () => {
-    it ('should handle unknown status updates from core', () => {
-        const mockCommand = {
-            type: 'unknown_status',
-            data: 'mystery'
-        }
-        const mockStatus = {
-            type: 'command_not_found',
-            data: mockCommand
-        }
-        const unistack = new UniStack
-        unistack.emitEventToCLI = () => {}
-        spyOn(unistack, 'emitEventToCLI').and.callThrough()
-        unistack.handleCLICommand(mockCommand)
-        expect(unistack.emitEventToCLI).toHaveBeenCalledTimes(1)
-        expect(unistack.emitEventToCLI).toHaveBeenCalledWith(mockStatus)
+        expect(mockIPC.fix).toHaveBeenCalledWith('message', readyMessage)
     })
 })
 
 describe ('UniStackCLI emitEventToCLI()', () => {
-    it ('should emit status updates to the CLI', (done) => {
+    it ('should emit messages to the CLI', (done) => {
         const unistack = new UniStack
-        const mockStatus = { type: 'success', data: 'mystery' }
+        const mockEvent = Message('success', 'MOCK_TEST_MESSAGE')
         const mockIPC = {
-            emit: (event, data) => {
-                expect(event).toBe('core::status')
-                expect(data).toBe(mockStatus)
+            emit: (type, event) => {
+                expect(type).toBe('message')
+                expect(event).toBe(mockEvent)
                 done()
             }
         }
-        unistack.cache.state = {
-            cli: {
-                ipc: mockIPC
+        unistack.getState = () => {
+            return {
+                cli: {
+                    ipc: mockIPC
+                }
             }
         }
-        unistack.emitEventToCLI(mockStatus)
+        unistack.emitEventToCLI(mockEvent)
     })
 })
 
 describe ('UniStack resolveConfig()', () => {
+    let unistack
+    beforeEach(() => {
+        unistack = new UniStack()
+        unistack.getState = () => {
+            return {
+                transport: {
+                    message: Message
+                }
+            }
+        }
+    })
     it ('should default to an empty object when config is not a string or object', (done) => {
-        const unistack = new UniStack()
         unistack.resolveConfig().then(result => {
             expect(result).toEqual({})
             done()
         })
     })
     it ('should return object when an object is passed in', (done) => {
-        const unistack = new UniStack()
         const config = {}
         unistack.resolveConfig(config).then(result => {
             expect(result).toBe(config)
@@ -238,7 +245,6 @@ describe ('UniStack resolveConfig()', () => {
         })
     })
     it ('should resolve a config filename', (done) => {
-        const unistack = new UniStack()
         const config = 'unistack.config.js'
         const configFile = Path.join(envPath, config)
         Fs.writeFileSync(configFile, basicConfig)
@@ -252,15 +258,13 @@ describe ('UniStack resolveConfig()', () => {
         })
     })
     it ('should emit error when file is not found', (done) => {
-        const config = 'unistack.config.js'
+        const config = 'unistack.config.not.found.js'
         const configFile = Path.join(envPath, config)
-        const mockResult = {
-            message: 'INVALID_CONFIG_PATH',
-            template: { filename: configFile }
-        }
-        const unistack = new UniStack()
-        unistack.resolveConfig(config).catch(result => {
-            expect(result).toEqual(mockResult)
+        const mockErrorMessage = Message('error', 'INVALID_CONFIG_PATH', {
+            'FILENAME': configFile
+        })
+        unistack.resolveConfig(config).catch(errorMessage => {
+            expect(errorMessage).toEqual(mockErrorMessage)
             done()
         })
     })
@@ -350,16 +354,16 @@ describe ('UniStack initSetup()', () => {
         })
     })
     it ('should throw errors if something went wrong', (done) => {
-        const error = new Error('fatal')
+        const mockError = new Error('fatal')
         let errorCount = 5
-        unistack.emitEventToCLI = result => { // mock error function
-            expect(result).toEqual({ type: 'error', data: error })
+        unistack.handleUnexpectedError = e => { // mock error function
+            expect(e).toBe(mockError)
             if (--errorCount === 0) {
                 done()
             }
         }
 
-        const promiseError = () => Promise.resolve().then(() => { throw error })
+        const promiseError = () => Promise.resolve().then(() => { throw mockError })
         unistack.isEnvironmentEmpty = promiseError
         Promise.resolve()
         .then(() => unistack.initSetup())
@@ -387,6 +391,373 @@ describe ('UniStack initSetup()', () => {
             return Promise.resolve()
         })
         .then(() => unistack.initSetup())
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+})
+
+describe ('UniStack startDevEnvironment()', () => {
+    const unistack = new UniStack()
+    unistack.isUnistackEnvironment = () => Promise.resolve()
+    unistack.initNodeBundle = () => Promise.resolve()
+    unistack.initBrowserBundle = () => Promise.resolve()
+    unistack.initReloader = () => Promise.resolve()
+    unistack.watchFiles = () => Promise.resolve()
+    unistack.runNodeBundle = () => Promise.resolve()
+
+    it ('should call the "isUnistackEnvironment" method', (done) => {
+        spyOn(unistack, 'isUnistackEnvironment')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.isUnistackEnvironment).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should call the "initNodeBundle" method', (done) => {
+        spyOn(unistack, 'initNodeBundle')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.initNodeBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should call the "initBrowserBundle" method', (done) => {
+        spyOn(unistack, 'initBrowserBundle')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.initBrowserBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should call the "initReloader" method', (done) => {
+        spyOn(unistack, 'initReloader')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.initReloader).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should call the "watchFiles" method', (done) => {
+        spyOn(unistack, 'watchFiles')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.watchFiles).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should call the "runNodeBundle" method', (done) => {
+        spyOn(unistack, 'runNodeBundle')
+        unistack.startDevEnvironment()
+        .then(() => {
+            expect(unistack.runNodeBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should throw errors if something went wrong', (done) => {
+        const mockError = new Error('fatal')
+        let errorCount = 5
+        unistack.handleUnexpectedError = e => { // mock error function
+            expect(e).toEqual(mockError)
+            if (--errorCount === 0) {
+                done()
+            }
+        }
+
+        const promiseError = () => Promise.resolve().then(() => { throw mockError })
+
+        unistack.initNodeBundle = promiseError
+        Promise.resolve()
+        .then(() => unistack.startDevEnvironment())
+        .then(() => {
+            unistack.initNodeBundle = () => Promise.resolve()
+            unistack.initBrowserBundle = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.startDevEnvironment())
+        .then(() => {
+            unistack.initBrowserBundle = () => Promise.resolve()
+            unistack.initReloader = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.startDevEnvironment())
+        .then(() => {
+            unistack.initReloader = () => Promise.resolve()
+            unistack.watchFiles = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.startDevEnvironment())
+        .then(() => {
+            unistack.watchFiles = () => Promise.resolve()
+            unistack.runNodeBundle = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.startDevEnvironment())
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+})
+
+describe ('UniStack stopDevEnvironment()', () => {
+    const unistack = new UniStack()
+    unistack.haltNodeBundle = () => Promise.resolve()
+    unistack.destroyReloader = () => Promise.resolve()
+    unistack.destroyWatcher = () => Promise.resolve()
+
+    it ('should return a promise', (done) => {
+        const promise = unistack.stopDevEnvironment()
+        expect(typeof promise.then).toBe('function')
+        promise.then(done)
+    })
+    it ('should terminate node bundle\'s process', (done) => {
+        spyOn(unistack, 'haltNodeBundle')
+        unistack.stopDevEnvironment()
+        .then(() => {
+            expect(unistack.haltNodeBundle).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should destroy reloader server', (done) => {
+        spyOn(unistack, 'destroyReloader')
+        unistack.stopDevEnvironment()
+        .then(() => {
+            expect(unistack.destroyReloader).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should destroy watcher server', (done) => {
+        spyOn(unistack, 'destroyWatcher')
+        unistack.stopDevEnvironment()
+        .then(() => {
+            expect(unistack.destroyWatcher).toHaveBeenCalledTimes(1)
+            done()
+        })
+    })
+    it ('should throw errors if something went wrong', (done) => {
+        const mockError = new Error('fatal')
+        let errorCount = 3
+        unistack.handleUnexpectedError = e => { // mock error function
+            expect(e).toEqual(mockError)
+            if (--errorCount === 0) {
+                done()
+            }
+        }
+
+        const promiseError = () => Promise.resolve().then(() => { throw mockError })
+
+        unistack.haltNodeBundle = promiseError
+        Promise.resolve()
+        .then(() => unistack.stopDevEnvironment())
+        .then(() => {
+            unistack.haltNodeBundle = () => Promise.resolve()
+            unistack.destroyReloader = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.stopDevEnvironment())
+        .then(() => {
+            unistack.destroyReloader = () => Promise.resolve()
+            unistack.destroyWatcher = promiseError
+            return Promise.resolve()
+        })
+        .then(() => unistack.stopDevEnvironment())
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+})
+
+describe ('UniStack handleUnexpectedError()', () => {
+    it ('should emit event to the CLI', (done) => {
+        const unistack = new UniStack()
+        const mockError = new Error('fatal')
+        const mockErrorMessage = Message('error', 'UNEXPECTED_CORE_ERROR', {
+            'ERROR_STACK': mockError.stack || mockError
+        })
+
+        unistack.getState = () => {
+            return {
+                transport: {
+                    message: Message
+                }
+            }
+        }
+        unistack.emitEventToCLI = (errorMessage) => {
+            expect(errorMessage).toEqual(mockErrorMessage)
+            done()
+        }
+        unistack.handleUnexpectedError(mockError)
+    })
+    it ('should handle errors without a stack', (done) => {
+        const unistack = new UniStack()
+        const mockError = new Error('fatal')
+        mockError.stack = undefined
+        const mockErrorMessage = Message('error', 'UNEXPECTED_CORE_ERROR', {
+            'ERROR_STACK': mockError.stack || mockError
+        })
+
+        unistack.getState = () => {
+            return {
+                transport: {
+                    message: Message
+                }
+            }
+        }
+        unistack.emitEventToCLI = (errorMessage) => {
+            expect(errorMessage).toEqual(mockErrorMessage)
+            done()
+        }
+        unistack.handleUnexpectedError(mockError)
+    })
+})
+
+describe ('UniStack rebuildBundles()', () => {
+    let originalTimeout
+    beforeEach(() => {
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000
+    })
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+    })
+    it ('should only rebuild browser bundle', (done) => {
+        const unistack = new UniStack()
+        const browserSpy = jasmine.createSpy('browserSpy')
+        const nodeSpy = jasmine.createSpy('nodeSpy')
+        // mock bundler
+        unistack.cache.state = {
+            environment: {
+                bundles: {
+                    browser: {
+                        bundler: {
+                            build: () => Promise.resolve(browserSpy('browser'))
+                        }
+                    },
+                    node: {
+                        bundler: {
+                            build: () => Promise.resolve(nodeSpy('node'))
+                        }
+                    }
+                }
+            }
+        }
+        unistack.rebuildBundles({ browser: true })
+        .then(() => {
+            expect(browserSpy).toHaveBeenCalledTimes(1)
+            expect(browserSpy).toHaveBeenCalledWith('browser')
+            expect(nodeSpy).not.toHaveBeenCalled()
+            done()
+        })
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+    it ('should only rebuild node bundle', (done) => {
+        const unistack = new UniStack()
+        const browserSpy = jasmine.createSpy('browserSpy')
+        const nodeSpy = jasmine.createSpy('nodeSpy')
+        // mock bundler
+        unistack.cache.state = {
+            environment: {
+                bundles: {
+                    browser: {
+                        bundler: {
+                            build: () => Promise.resolve(browserSpy('browser'))
+                        }
+                    },
+                    node: {
+                        bundler: {
+                            build: () => Promise.resolve(nodeSpy('node'))
+                        }
+                    }
+                }
+            }
+        }
+        // mock emit event
+        unistack.emitEvent = () => {}
+        unistack.rebuildBundles({ node: true })
+        .then(() => {
+            expect(nodeSpy).toHaveBeenCalledTimes(1)
+            expect(nodeSpy).toHaveBeenCalledWith('node')
+            expect(browserSpy).not.toHaveBeenCalled()
+            done()
+        })
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+    it ('should only rebuild browser and node bundles', (done) => {
+        const unistack = new UniStack()
+        const browserSpy = jasmine.createSpy('browserSpy')
+        const nodeSpy = jasmine.createSpy('nodeSpy')
+        // mock bundler
+        unistack.cache.state = {
+            environment: {
+                bundles: {
+                    browser: {
+                        bundler: {
+                            build: () => Promise.resolve(browserSpy('browser'))
+                        }
+                    },
+                    node: {
+                        bundler: {
+                            build: () => Promise.resolve(nodeSpy('node'))
+                        }
+                    }
+                }
+            }
+        }
+        // mock emit event
+        unistack.emitEvent = () => {}
+        unistack.rebuildBundles({ browser: true, node: true })
+        .then(() => {
+            expect(browserSpy).toHaveBeenCalledTimes(1)
+            expect(browserSpy).toHaveBeenCalledWith('browser')
+            expect(nodeSpy).toHaveBeenCalledTimes(1)
+            expect(nodeSpy).toHaveBeenCalledWith('node')
+            done()
+        })
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+    it ('should emit a "reload" event if node rebundled do server file changes', (done) => {
+        const unistack = new UniStack()
+        const browserSpy = jasmine.createSpy('browserSpy')
+        const nodeSpy = jasmine.createSpy('nodeSpy')
+        // mock bundler
+        unistack.cache.state = {
+            environment: {
+                bundles: {
+                    browser: {
+                        bundler: {
+                            build: () => Promise.resolve(browserSpy('browser'))
+                        }
+                    },
+                    node: {
+                        bundler: {
+                            build: () => Promise.resolve(nodeSpy('node'))
+                        }
+                    }
+                }
+            }
+        }
+        // mock emit event
+        unistack.emitEvent = event => {
+            expect(event).toBe('reload')
+            done()
+        }
+        unistack.rebuildBundles({ browser: true, node: true, explicitNode: true })
+        .catch(e => console.log(e.stack)) // catch errors in previous blocks
+    })
+    it ('should handle errors thrown by the bundlers', (done) => {
+        const unistack = new UniStack()
+        const mockError = new Error('Mock Error!')
+        // mock bundler
+        unistack.cache.state = {
+            environment: {
+                bundles: {
+                    node: {
+                        bundler: {
+                            build: () => Promise.reject(mockError)
+                        }
+                    }
+                }
+            }
+        }
+        unistack.handleUnexpectedError = e => { // mock error function
+            expect(e).toEqual(mockError)
+            done()
+        }
+        unistack.rebuildBundles({ node: true })
         .catch(e => console.log(e.stack)) // catch errors in previous blocks
     })
 })
@@ -660,163 +1031,6 @@ describe ('UniStack emitEvent()', () => {
     })
 })
 
-describe ('UniStack rebuildBundles()', () => {
-    let originalTimeout
-    beforeEach(() => {
-        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000
-    })
-    afterEach(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
-    })
-    it ('should only rebuild browser bundle', (done) => {
-        const unistack = new UniStack()
-        const browserSpy = jasmine.createSpy('browserSpy')
-        const nodeSpy = jasmine.createSpy('nodeSpy')
-        // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
-                        }
-                    }
-                }
-            }
-        }
-        unistack.rebuildBundles({ browser: true })
-        .then(() => {
-            expect(browserSpy).toHaveBeenCalledTimes(1)
-            expect(browserSpy).toHaveBeenCalledWith('browser')
-            expect(nodeSpy).not.toHaveBeenCalled()
-            done()
-        })
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
-    })
-    it ('should only rebuild node bundle', (done) => {
-        const unistack = new UniStack()
-        const browserSpy = jasmine.createSpy('browserSpy')
-        const nodeSpy = jasmine.createSpy('nodeSpy')
-        // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
-                        }
-                    }
-                }
-            }
-        }
-        // mock emit event
-        unistack.emitEvent = () => {}
-        unistack.rebuildBundles({ node: true })
-        .then(() => {
-            expect(nodeSpy).toHaveBeenCalledTimes(1)
-            expect(nodeSpy).toHaveBeenCalledWith('node')
-            expect(browserSpy).not.toHaveBeenCalled()
-            done()
-        })
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
-    })
-    it ('should only rebuild browser and node bundles', (done) => {
-        const unistack = new UniStack()
-        const browserSpy = jasmine.createSpy('browserSpy')
-        const nodeSpy = jasmine.createSpy('nodeSpy')
-        // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
-                        }
-                    }
-                }
-            }
-        }
-        // mock emit event
-        unistack.emitEvent = () => {}
-        unistack.rebuildBundles({ browser: true, node: true })
-        .then(() => {
-            expect(browserSpy).toHaveBeenCalledTimes(1)
-            expect(browserSpy).toHaveBeenCalledWith('browser')
-            expect(nodeSpy).toHaveBeenCalledTimes(1)
-            expect(nodeSpy).toHaveBeenCalledWith('node')
-            done()
-        })
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
-    })
-    it ('should emit a "reload" event if node rebundled do server file changes', (done) => {
-        const unistack = new UniStack()
-        const browserSpy = jasmine.createSpy('browserSpy')
-        const nodeSpy = jasmine.createSpy('nodeSpy')
-        // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
-                        }
-                    }
-                }
-            }
-        }
-        // mock emit event
-        unistack.emitEvent = event => {
-            expect(event).toBe('reload')
-            done()
-        }
-        unistack.rebuildBundles({ browser: true, node: true, explicitNode: true })
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
-    })
-    it ('should handle errors thrown by the bundlers', (done) => {
-        const unistack = new UniStack()
-        const mockError = new Error('Mock Error!')
-        // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    node: {
-                        bundler: {
-                            build: () => Promise.reject(mockError)
-                        }
-                    }
-                }
-            }
-        }
-        unistack.emitEventToCLI = result => { // mock error function
-            expect(result).toEqual({ type: 'error', data: mockError })
-            done()
-        }
-        unistack.rebuildBundles({ node: true })
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
-    })
-})
-
 describe ('UniStack handleFileChange()', () => {
     let originalTimeout
     beforeEach(() => {
@@ -913,173 +1127,6 @@ describe ('UniStack handleFileChange()', () => {
             done()
         }
         unistack.handleFileChange(sharedFile)
-    })
-})
-
-describe ('UniStack startDevEnvironment()', () => {
-    const unistack = new UniStack()
-    unistack.isUnistackEnvironment = () => Promise.resolve()
-    unistack.initNodeBundle = () => Promise.resolve()
-    unistack.initBrowserBundle = () => Promise.resolve()
-    unistack.initReloader = () => Promise.resolve()
-    unistack.watchFiles = () => Promise.resolve()
-    unistack.runNodeBundle = () => Promise.resolve()
-
-    it ('should call the "isUnistackEnvironment" method', (done) => {
-        spyOn(unistack, 'isUnistackEnvironment')
-        unistack.startDevEnvironment()
-        .then(() => {
-            expect(unistack.isUnistackEnvironment).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should call the "initNodeBundle" method', (done) => {
-        spyOn(unistack, 'initNodeBundle')
-        unistack.startDevEnvironment()
-        .then(() => {
-            expect(unistack.initNodeBundle).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should call the "initBrowserBundle" method', (done) => {
-        spyOn(unistack, 'initBrowserBundle')
-        unistack.startDevEnvironment()
-        .then(() => {
-            expect(unistack.initBrowserBundle).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should call the "initReloader" method', (done) => {
-        spyOn(unistack, 'initReloader')
-        unistack.startDevEnvironment()
-        .then(() => {
-            expect(unistack.initReloader).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should call the "watchFiles" method', (done) => {
-        spyOn(unistack, 'watchFiles')
-        unistack.startDevEnvironment()
-        .then(() => {
-            expect(unistack.watchFiles).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should call the "runNodeBundle" method', (done) => {
-        spyOn(unistack, 'runNodeBundle')
-        unistack.startDevEnvironment()
-        .then(() => {
-            expect(unistack.runNodeBundle).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should throw errors if something went wrong', (done) => {
-        const error = new Error('fatal')
-        let errorCount = 5
-        unistack.emitEventToCLI = result => { // mock error function
-            expect(result).toEqual({ type: 'error', data: error })
-            if (--errorCount === 0) {
-                done()
-            }
-        }
-
-        const promiseError = () => Promise.resolve().then(() => { throw error })
-
-        unistack.initNodeBundle = promiseError
-        Promise.resolve()
-        .then(() => unistack.startDevEnvironment())
-        .then(() => {
-            unistack.initNodeBundle = () => Promise.resolve()
-            unistack.initBrowserBundle = promiseError
-            return Promise.resolve()
-        })
-        .then(() => unistack.startDevEnvironment())
-        .then(() => {
-            unistack.initBrowserBundle = () => Promise.resolve()
-            unistack.initReloader = promiseError
-            return Promise.resolve()
-        })
-        .then(() => unistack.startDevEnvironment())
-        .then(() => {
-            unistack.initReloader = () => Promise.resolve()
-            unistack.watchFiles = promiseError
-            return Promise.resolve()
-        })
-        .then(() => unistack.startDevEnvironment())
-        .then(() => {
-            unistack.watchFiles = () => Promise.resolve()
-            unistack.runNodeBundle = promiseError
-            return Promise.resolve()
-        })
-        .then(() => unistack.startDevEnvironment())
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
-    })
-})
-
-describe ('UniStack stopDevEnvironment()', () => {
-    const unistack = new UniStack()
-    unistack.haltNodeBundle = () => Promise.resolve()
-    unistack.destroyReloader = () => Promise.resolve()
-    unistack.destroyWatcher = () => Promise.resolve()
-
-    it ('should return a promise', (done) => {
-        const promise = unistack.stopDevEnvironment()
-        expect(typeof promise.then).toBe('function')
-        promise.then(done)
-    })
-    it ('should terminate node bundle\'s process', (done) => {
-        spyOn(unistack, 'haltNodeBundle')
-        unistack.stopDevEnvironment()
-        .then(() => {
-            expect(unistack.haltNodeBundle).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should destroy reloader server', (done) => {
-        spyOn(unistack, 'destroyReloader')
-        unistack.stopDevEnvironment()
-        .then(() => {
-            expect(unistack.destroyReloader).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should destroy watcher server', (done) => {
-        spyOn(unistack, 'destroyWatcher')
-        unistack.stopDevEnvironment()
-        .then(() => {
-            expect(unistack.destroyWatcher).toHaveBeenCalledTimes(1)
-            done()
-        })
-    })
-    it ('should throw errors if something went wrong', (done) => {
-        const error = new Error('fatal')
-
-        let errorCount = 3
-        unistack.emitEventToCLI = result => { // mock error function
-            expect(result).toEqual({ type: 'error', data: error })
-            if (--errorCount === 0) {
-                done()
-            }
-        }
-
-        const promiseError = () => Promise.resolve().then(() => { throw error })
-
-        unistack.haltNodeBundle = promiseError
-        Promise.resolve()
-        .then(() => unistack.stopDevEnvironment())
-        .then(() => {
-            unistack.haltNodeBundle = () => Promise.resolve()
-            unistack.destroyReloader = promiseError
-            return Promise.resolve()
-        })
-        .then(() => unistack.stopDevEnvironment())
-        .then(() => {
-            unistack.destroyReloader = () => Promise.resolve()
-            unistack.destroyWatcher = promiseError
-            return Promise.resolve()
-        })
-        .then(() => unistack.stopDevEnvironment())
-        .catch(e => console.log(e.stack)) // catch errors in previous blocks
     })
 })
 

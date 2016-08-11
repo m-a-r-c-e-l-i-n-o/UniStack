@@ -1,5 +1,8 @@
 const coreState = {
     resolve: null,
+    transport: {
+        message: {}
+    },
     environment: {
         server: null,
         bundles: {

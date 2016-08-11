@@ -452,4 +452,3 @@ describe ('UniStackCLI getTransport()', () => {
         .toEqual(Transport.create)
     })
 })
-

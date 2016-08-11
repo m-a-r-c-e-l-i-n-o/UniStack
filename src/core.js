@@ -11,6 +11,7 @@ import Minimatch from 'minimatch'
 import { createServer as CreateServer } from 'http'
 import Config from '../config.js'
 import State from './core-state.js'
+import Transport from './transport/index.js'
 
 class UniStack {
     // start of utility methods
@@ -43,34 +44,41 @@ class UniStack {
     }
     // end of utility methods
     // start of interaction with CLI
+    initTransports() {
+        const state = this.getState()
+        const transport = this.getTransport()
+        state.transport.message = transport('message')
+    }
+    getTransport() {
+        return Transport.create
+    }
     listenToCLI() {
         const state = this.getState()
+        const Message = state.transport.message
         const ipc = require('ipc-event-emitter').default(process)
 
         state.cli.ipc = ipc
 
         return new Promise((resolve, reject) => {
-            ipc.fix('core::ready')
-            ipc.on('cli::command', (command) => {
-                if (command.type === 'terminate') {
+            ipc.fix('message', Message('success', 'CORE_READY'))
+            ipc.on('message', message => {
+                if (message.type === 'success' && message.action === 'CORE_CLOSE') {
                     return resolve(ipc)
                 }
-                this.handleCLICommand(command)
             })
         })
     }
-    handleCLICommand(command) {
-        switch(command.type) {
-            // 'init': this.initSetup()
-            // 'start-dev': this.startDevEnvironment()
-            // 'stop-dev': this.startDevEnvironment()
-            default:
-                this.emitEventToCLI({ type: 'command_not_found', data: command })
-        }
-    }
-    emitEventToCLI(data) {
+    emitEventToCLI(event) {
         const state = this.getState()
-        state.cli.ipc.emit('core::status', data)
+        state.cli.ipc.emit('message', event)
+    }
+    handleUnexpectedError(e) {
+        const state = this.getState()
+        const Message = state.transport.message
+        const errorMessage = Message('error', 'UNEXPECTED_CORE_ERROR', {
+            'ERROR_STACK': e.stack || e
+        })
+        this.emitEventToCLI(errorMessage)
     }
     // end of interaction with CLI
     // start of procedural methods
@@ -81,8 +89,8 @@ class UniStack {
             await this.setupEnvironment()
             await this.installNPMDependencies()
             await this.installJSPMDependencies()
-        } catch (data) {
-            this.emitEventToCLI({ type: 'error', data })
+        } catch (e) {
+            this.handleUnexpectedError(e)
         }
     }
     async startDevEnvironment() { // abstract to its own module
@@ -93,8 +101,8 @@ class UniStack {
             await this.initReloader()
             await this.watchFiles()
             await this.runNodeBundle()
-        } catch (data) {
-            this.emitEventToCLI({ type: 'error', data })
+        } catch (e) {
+            this.handleUnexpectedError(e)
         }
     }
     async stopDevEnvironment() { // abstract to its own module
@@ -102,8 +110,8 @@ class UniStack {
             await this.haltNodeBundle()
             await this.destroyReloader()
             await this.destroyWatcher()
-        } catch (data) {
-            this.emitEventToCLI({ type: 'error', data })
+        } catch (e) {
+            this.handleUnexpectedError(e)
         }
     }
     // end of procedural methods
@@ -351,8 +359,7 @@ class UniStack {
             })
         }
 
-        return promise
-        .catch(data => this.emitEventToCLI({ type: 'error', data }))
+        return promise.catch(e => { this.handleUnexpectedError(e) })
     }
     emitEvent(type, data) {  // side effect of handleFileChange, rebuildBundles
         // move to CLI and remake hot-reloader
@@ -388,6 +395,7 @@ class UniStack {
         Fs.emptyDirSync(system.environment.root)
     }
     resolveConfig(filename) {
+        const state = this.getState()
         return new Promise((resolve, reject) => {
             if (!filename) {
                 filename = {}
@@ -401,10 +409,11 @@ class UniStack {
             try {
                 configWrapper = require(configFilename)
             } catch (e) {
-                return reject({
-                    message: 'INVALID_CONFIG_PATH',
-                    template: { filename: configFilename }
+                const Message = state.transport.message
+                const errorMessage = Message('error', 'INVALID_CONFIG_PATH', {
+                    'FILENAME': configFilename
                 })
+                return reject(errorMessage)
             }
             const config = Object.seal({
                 options: null,
