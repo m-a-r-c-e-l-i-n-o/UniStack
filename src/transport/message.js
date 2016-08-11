@@ -1,37 +1,62 @@
 import Config from '../../config-tmp.js'
+import XRegExp from 'xregexp'
 
 class Message {
-    constructor(type, action, template) {
-        const messageTypes = this.getMessageTypes()
-        this.validateMessage(type, action, messageTypes)
+    constructor() {
+        this.type = null
+        this.action = null
+        this.text = null
+    }
+    static create(type, action, template) {
+        const message = Message.createObjectInstance()
+        const messageTypes = message.getMessageTypes()
+        const rawText = message.getRawText(type, action, messageTypes)
+        const placeHolders = message.getPlaceHolders(rawText)
+        const finalText = message.getFinalText(rawText, placeHolders, template)
 
-        const message = messageTypes[type][action]
-        const placeHolders = this.getPlaceHolders(message)
-        this.validateTemplate(placeHolders, template)
+        message.type = type
+        message.action = action
+        message.text = finalText
 
-        this.type = type
-        this.action = action
-        this.text = this.getFinalText(message, template)
+        return message
+    }
+    static createObjectInstance() {
+        return new Message()
     }
     getMessageTypes () {
         return Config.transport.message
     }
-    getPlaceHolders(message) {
+    getPlaceHolders(rawText) {
         const placeHolderPattern = /\{\{[A-Z_1-9]+\}\}/g
-        const placeHolders = message.match(placeHolderPattern) || []
+        const placeHolders = rawText.match(placeHolderPattern) || []
         const bracketPattern = /\{\{|\}\}/g
+
         return placeHolders.map(
             placeHolder => placeHolder.replace(bracketPattern, '')
         )
     }
-    getFinalText(message, template = {}) {
+    getFinalText(rawText, placeHolders = [], template = {}) {
+        const mismatches = placeHolders.filter(
+            placeHolder => !template[placeHolder]
+        )
+
+        if (mismatches.length > 0) {
+            this.throwError('INVALID_MESSAGE_TEMPLATE', {
+                'MISMATCHED_PLACE_HOLDERS': mismatches.join(', '),
+                'PLACE_HOLDERS': placeHolders.join(', ')
+            })
+        }
+
+        let finalText = rawText
         Object.keys(template).forEach(placeHolder => {
-            message = message.replace(`{{${placeHolder}}}`, template[placeHolder])
+            const placeHolderRegex = XRegExp(`{{${placeHolder}}}`, 'g')
+            finalText = finalText.replace(placeHolderRegex, template[placeHolder])
         })
-        return message.trim()
+        return finalText.trim()
     }
-    validateMessage(type, action, messageTypes) {
+    getRawText(type, action, messageTypes) {
         const validTypes = Object.keys(messageTypes)
+
         if (!validTypes.includes(type)) {
             return this.throwError('INVALID_MESSAGE_TYPE', {
                 'TYPE': type,
@@ -41,20 +66,11 @@ class Message {
         if (typeof messageTypes[type][action] !== 'string') {
             return this.throwError('INVALID_MESSAGE_ACTION', { 'ACTION': action })
         }
-    }
-    validateTemplate(placeHolders, template = {}) {
-        const mismatches = placeHolders.filter(
-            placeHolder => !template[placeHolder]
-        )
-        if (mismatches.length > 0) {
-            this.throwError('INVALID_MESSAGE_TEMPLATE', {
-                'MISMATCHED_PLACE_HOLDERS': mismatches.join(', '),
-                'PLACE_HOLDERS': placeHolders.join(', ')
-            })
-        }
+
+        return messageTypes[type][action]
     }
     throwError(action, template) {
-        throw new Error(new Message('error', action, template).text)
+        throw new Error(Message.create('error', action, template).text)
     }
 }
 

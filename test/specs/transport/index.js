@@ -6,8 +6,16 @@ describe ('Transport', () => {
     it ('should be a function', () => {
         expect(typeof Transport).toBe('function')
     })
-    it ('should return message transport', () => {
-        expect(Transport('message')).toBe(Message)
+})
+
+describe ('Transport create', () => {
+    it ('should return create message transport', () => {
+        const mockCreateMessage = () => { console.log('hellow rold')}
+        const mockMessage = { create: mockCreateMessage }
+        const originalGetMessageObject = Transport.getMessageObject
+        Transport.getMessageObject = () => mockMessage
+        expect(Transport.create('message')).toBe(mockCreateMessage)
+        Transport.getMessageObject = originalGetMessageObject
     })
     it ('should throw type error', () => {
         const template = {
@@ -19,6 +27,12 @@ describe ('Transport', () => {
         .replace('{{VALID_TYPES}}', template['VALID_TYPES'])
         .trim()
 
-        expect(() => Transport('master-type')).toThrowError(errorMessage)
+        expect(() => Transport.create('master-type')).toThrowError(errorMessage)
+    })
+})
+
+describe ('Transport getMessageObject', () => {
+    it ('should be a function', () => {
+        expect(Transport.getMessageObject()).toBe(Message)
     })
 })

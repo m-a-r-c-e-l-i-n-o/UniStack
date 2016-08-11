@@ -80,36 +80,37 @@ class UniStackCLI {
     }
     initTransports() {
         const state = this.getState()
-        state.transport.message = this.getTransport('message')
+        const transport = this.getTransport()
+        state.transport.message = transport('message')
     }
-    getTransport(type) {
-        return Transport(type)
+    getTransport() {
+        return Transport.create
     }
     validateCommand(value) {
         if (value.trim()) {
             return true
         }
         const Message = this.getState().transport.message
-        return new Message('error', 'EMPTY_COMMAND').text
+        return Message('error', 'EMPTY_COMMAND').text
     }
     handleCoreProcessExitStatus(exitCode) {
         const Message = this.getState().transport.message
         let status
         switch (exitCode) {
             case 0:
-                status = new Message('success', 'UNKNOWN_CORE_EXIT').text
+                status = Message('success', 'UNKNOWN_CORE_EXIT').text
                 break
             case 100:
-                status = new Message('success', 'CORE_EXIT').text
+                status = Message('success', 'CORE_EXIT').text
                 break
             case 1:
-                status = new Message('error', 'UNKNOWN_CORE_EXIT').text
+                status = Message('error', 'UNKNOWN_CORE_EXIT').text
                 break
             case 101:
-                status = new Message('error', 'CORE_EXIT').text
+                status = Message('error', 'CORE_EXIT').text
                 break
             default:
-                status = new Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
+                status = Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
         }
         this.handleStatus(status)
         return status
@@ -125,7 +126,7 @@ class UniStackCLI {
         const questions = [{
             type: 'input',
             name: 'command',
-            message: new Message('update', 'PROMPT_FOR_COMMAND').text
+            message: Message('update', 'PROMPT_FOR_COMMAND').text
         }]
         const prompt = Inquirer.createPromptModule()
         const promise = prompt(questions)

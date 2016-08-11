@@ -15,7 +15,7 @@ const envPath = Config.environment.directory
 const testPath = Path.join(unistackPath, 'test')
 const envUnistackPath = Path.join(envPath, 'node_modules', 'unistack')
 const envUnistackBootstrapPath = Path.join(envUnistackPath, 'bootstrap')
-const Message = Transport('message')
+const Message = Transport.create('message')
 
 describe ('UniStackCLI', () => {
     it ('should be a function.', () => {
@@ -118,32 +118,32 @@ describe ('UniStackCLI handleCoreProcessExitStatus()', () => {
         }
     })
     it ('should handle unknown core process exit', () => {
-        const mockExitStatus = new Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
+        const mockExitStatus = Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus()).toEqual(mockExitStatus)
     })
     it ('should handle unknown, but successful core process exit', () => {
-        const mockExitStatus = new Message('success', 'UNKNOWN_CORE_EXIT').text
+        const mockExitStatus = Message('success', 'UNKNOWN_CORE_EXIT').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus(0)).toEqual(mockExitStatus)
     })
     it ('should handle successful core process exit', () => {
-        const mockExitStatus = new Message('success', 'CORE_EXIT').text
+        const mockExitStatus = Message('success', 'CORE_EXIT').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus(100)).toEqual(mockExitStatus)
     })
     it ('should handle unknown erred core process exit', () => {
-        const mockExitStatus = new Message('error', 'UNKNOWN_CORE_EXIT').text
+        const mockExitStatus = Message('error', 'UNKNOWN_CORE_EXIT').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus(1)).toEqual(mockExitStatus)
     })
     it ('should handle erred core process exit', () => {
-        const mockExitStatus = new Message('error', 'CORE_EXIT').text
+        const mockExitStatus = Message('error', 'CORE_EXIT').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus(101)).toEqual(mockExitStatus)
     })
     it ('should call the "handleStatus" method', () => {
-        const mockExitStatus = new Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
+        const mockExitStatus = Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
         spyOn(unistack, 'handleStatus')
         unistack.handleCoreProcessExitStatus()
         expect(unistack.handleStatus).toHaveBeenCalledTimes(1)
@@ -409,7 +409,7 @@ describe ('UniStack validateCommand()', () => {
         unistack.getState = () => {
             return { transport: { message: Message } }
         }
-        const errorMessage = new Message('error', 'EMPTY_COMMAND').text
+        const errorMessage = Message('error', 'EMPTY_COMMAND').text
         let value
         value = ''
         expect(unistack.validateCommand(value)).toBe(errorMessage)
@@ -419,20 +419,37 @@ describe ('UniStack validateCommand()', () => {
 })
 
 describe ('UniStackCLI initTransports()', () => {
+    it ('should create a message transport', (done) => {
+        const unistack = new UniStackCLI()
+        const state = { transport: {} }
+        const messageTransport = {}
+        const transport = { create: type => {
+            expect(type).toBe('message')
+            done()
+        }}
+        unistack.getTransport = () => transport.create
+        unistack.getState = () => state
+        unistack.initTransports()
+    })
     it ('should store the message in the state object', () => {
         const unistack = new UniStackCLI()
         const state = { transport: {} }
-        const message = 'hello'
-        unistack.getTransport = () => message
+        const messageTransport = {}
+        const transport = { create: () => messageTransport }
+
+        unistack.getTransport = () => transport.create
         unistack.getState = () => state
         unistack.initTransports()
-        expect(state.transport.message).toBe(message)
+
+        expect(state.transport.message).toBe(messageTransport)
     })
 })
 
 describe ('UniStackCLI getTransport()', () => {
-    it ('should return message object', () => {
+    it ('should return create message function', () => {
         const unistack = new UniStackCLI()
-        expect(unistack.getTransport('message')).toBe(Message)
+        expect(unistack.getTransport('message'))
+        .toEqual(Transport.create)
     })
 })
+
