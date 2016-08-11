@@ -5,8 +5,9 @@ import Inquirer from 'inquirer'
 import TreeKill from 'tree-kill'
 import ChildProcess from 'child_process'
 import IPC from 'ipc-event-emitter'
-import Config from '../config.js'
+import Config from '../config-tmp.js'
 import State from './cli-state.js'
+import Transport from './transport/index.js'
 
 class UniStackCLI {
     constructor() {
@@ -44,6 +45,7 @@ class UniStackCLI {
                     resolve(exitCode)
                 })
             })
+            .then(() => this.initTransports())
         })
     }
     initCoreProcess() {
@@ -68,36 +70,46 @@ class UniStackCLI {
                 state.messenger.core = coreProcessIPC
                 resolve({ coreProcess: processWrapper, coreProcessIPC })
             })(coreProcess, coreProcessIPC, resolve)
-
-            coreProcessIPC.on('core::ready', onReady)
-            coreProcessIPC.on('core::status', status => {
-                this.handleStatus(status)
+            coreProcessIPC.on('message', message => {
+                if (message.type === 'success' && message.action === 'CORE_READY') {
+                    return onReady()
+                }
+                this.handleStatus(message)
             })
         })
+    }
+    initTransports() {
+        const state = this.getState()
+        state.transport.message = this.getTransport('message')
+    }
+    getTransport(type) {
+        return Transport(type)
     }
     validateCommand(value) {
         if (value.trim()) {
             return true
         }
-        return Config.message.instruction.EMPTY_COMMAND
+        const Message = this.getState().transport.message
+        return new Message('error', 'EMPTY_COMMAND').text
     }
     handleCoreProcessExitStatus(exitCode) {
+        const Message = this.getState().transport.message
         let status
         switch (exitCode) {
             case 0:
-                status = { type: 'success', data: { message: 'UNKNOWN_CORE_EXIT' }}
+                status = new Message('success', 'UNKNOWN_CORE_EXIT').text
                 break
             case 100:
-                status = { type: 'success', data: { message: 'CORE_EXIT' }}
+                status = new Message('success', 'CORE_EXIT').text
                 break
             case 1:
-                status = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT' }}
+                status = new Message('error', 'UNKNOWN_CORE_EXIT').text
                 break
             case 101:
-                status = { type: 'error', data: { message: 'CORE_EXIT' }}
+                status = new Message('error', 'CORE_EXIT').text
                 break
             default:
-                status = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT_CODE' }}
+                status = new Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
         }
         this.handleStatus(status)
         return status
@@ -109,10 +121,11 @@ class UniStackCLI {
         }
     }
     promptForCommand() {
+        const Message = this.getState().transport.message
         const questions = [{
             type: 'input',
             name: 'command',
-            message: Config.message.instruction.PROMPT_FOR_COMMAND
+            message: new Message('update', 'PROMPT_FOR_COMMAND').text
         }]
         const prompt = Inquirer.createPromptModule()
         const promise = prompt(questions)
@@ -122,7 +135,7 @@ class UniStackCLI {
         return promise
     }
     statusNotFound(status) {
-        console.error('Unknown status from core:', status.type, status.data)
+        console.error('Unknown status from core:', status.type, status.action)
     }
     throwError(error) {
         throw error

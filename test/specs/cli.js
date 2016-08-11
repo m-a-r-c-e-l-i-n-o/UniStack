@@ -4,7 +4,8 @@ import ChildProcess from 'child_process'
 import BDDStdin from '../lib/bdd-stdin.js'
 import UniStackCLI from '../../src/cli.js'
 import State from '../../src/cli-state.js'
-import Config from '../../config.js'
+import Transport from '../../src/transport/index.js'
+import Config from '../../config-tmp.js'
 import Inquirer from 'inquirer'
 
 const unistackPath = Path.join(__dirname, '..', '..')
@@ -14,6 +15,7 @@ const envPath = Config.environment.directory
 const testPath = Path.join(unistackPath, 'test')
 const envUnistackPath = Path.join(envPath, 'node_modules', 'unistack')
 const envUnistackBootstrapPath = Path.join(envUnistackPath, 'bootstrap')
+const Message = Transport('message')
 
 describe ('UniStackCLI', () => {
     it ('should be a function.', () => {
@@ -94,6 +96,7 @@ describe ('UniStackCLI init()', () => {
             const coreProcess = ChildProcess.fork(mockCoreInstanceFile, [])
             return Promise.resolve({ coreProcess })
         }
+        unistack.initTransports = () => {}
 
         spyOn(unistack, 'handleCoreProcessExitStatus')
         unistack.init().then(exitCode => {
@@ -107,39 +110,40 @@ describe ('UniStackCLI init()', () => {
 })
 
 describe ('UniStackCLI handleCoreProcessExitStatus()', () => {
+    let unistack
+    beforeEach(() => {
+        unistack = new UniStackCLI
+        unistack.getState = () => {
+            return { transport: { message: Message } }
+        }
+    })
     it ('should handle unknown core process exit', () => {
-        const unistack = new UniStackCLI
-        const mockExitStatus = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT_CODE' }}
+        const mockExitStatus = new Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus()).toEqual(mockExitStatus)
     })
     it ('should handle unknown, but successful core process exit', () => {
-        const unistack = new UniStackCLI
-        const mockExitStatus = { type: 'success', data: { message: 'UNKNOWN_CORE_EXIT' }}
+        const mockExitStatus = new Message('success', 'UNKNOWN_CORE_EXIT').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus(0)).toEqual(mockExitStatus)
     })
     it ('should handle successful core process exit', () => {
-        const unistack = new UniStackCLI
-        const mockExitStatus = { type: 'success', data: { message: 'CORE_EXIT' }}
+        const mockExitStatus = new Message('success', 'CORE_EXIT').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus(100)).toEqual(mockExitStatus)
     })
     it ('should handle unknown erred core process exit', () => {
-        const unistack = new UniStackCLI
-        const mockExitStatus = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT' }}
+        const mockExitStatus = new Message('error', 'UNKNOWN_CORE_EXIT').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus(1)).toEqual(mockExitStatus)
     })
     it ('should handle erred core process exit', () => {
-        const unistack = new UniStackCLI
-        const mockExitStatus = { type: 'error', data: { message: 'CORE_EXIT' }}
+        const mockExitStatus = new Message('error', 'CORE_EXIT').text
         unistack.handleStatus = () => {}
         expect(unistack.handleCoreProcessExitStatus(101)).toEqual(mockExitStatus)
     })
     it ('should call the "handleStatus" method', () => {
-        const unistack = new UniStackCLI
-        const mockExitStatus = { type: 'error', data: { message: 'UNKNOWN_CORE_EXIT_CODE' }}
+        const mockExitStatus = new Message('error', 'UNKNOWN_CORE_EXIT_CODE').text
         spyOn(unistack, 'handleStatus')
         unistack.handleCoreProcessExitStatus()
         expect(unistack.handleStatus).toHaveBeenCalledTimes(1)
@@ -158,37 +162,94 @@ describe ('UniStackCLI initCoreProcess()', () => {
     })
     it ('should start core process and open IPC channel', (done) => {
         const unistack = new UniStackCLI
+        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', '1')
+        const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
+        const content = `
+            #!/usr/bin/env node
+            var IPC = require('ipc-event-emitter').default
+            var ipc = IPC(process)
+            ipc.fix('message', { type: 'success', action: 'CORE_READY' })
+        `
+        unistack.getState = () => {
+            return {
+                processes: { core: null },
+                messenger: { core: null }
+            }
+        }
+        unistack.getSystemConstants = () => {
+            return {
+                root: unistackTmpPath,
+                environment: {
+                    root: testPath
+                }
+            }
+        }
+
+        Fs.outputFileSync(mockCoreInstanceFile, content.trim())
+        Fs.chmodSync(mockCoreInstanceFile, '0755')
+
         unistack.initCoreProcess().then(({ coreProcess, coreProcessIPC }) => {
             expect(coreProcessIPC).toBeDefined()
+            Fs.removeSync(mockCoreInstanceFile)
             coreProcess.destroy(done)
         })
         .catch(e => console.error(e.stack))
     })
     it ('should store the core process and ipc in the state object', (done) => {
-        const unistack = new UniStackCLI()
+        const unistack = new UniStackCLI
+        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', '2')
+        const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
+        const content = `
+            #!/usr/bin/env node
+            var IPC = require('ipc-event-emitter').default
+            var ipc = IPC(process)
+            ipc.fix('message', { type: 'success', action: 'CORE_READY' })
+        `
+        const state = {
+            processes: { core: null },
+            messenger: { core: null }
+        }
+
+        unistack.getState = () => state
+        unistack.getSystemConstants = () => {
+            return {
+                root: unistackTmpPath,
+                environment: {
+                    root: testPath
+                }
+            }
+        }
+
+        Fs.outputFileSync(mockCoreInstanceFile, content.trim())
+        Fs.chmodSync(mockCoreInstanceFile, '0755')
+
         unistack.initCoreProcess().then(({ coreProcess, coreProcessIPC }) => {
-            expect(unistack.cache.state.processes.core).toBe(coreProcess)
-            expect(unistack.cache.state.messenger.core).toBe(coreProcessIPC)
+            expect(state.processes.core).toBe(coreProcess)
+            expect(state.messenger.core).toBe(coreProcessIPC)
+            Fs.removeSync(mockCoreInstanceFile)
             coreProcess.destroy(done)
         })
         .catch(e => console.error(e.stack))
     })
     it ('should handle status updates from the core', (done) => {
         const unistack = new UniStackCLI
-        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test')
+        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', '3')
         const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
         const content = `
             #!/usr/bin/env node
             var IPC = require('ipc-event-emitter').default
             var ipc = IPC(process)
-            ipc.fix('core::ready')
-            ipc.emit('core::status', {
-                type: 'something_other_than_ready',
-                data: 'nothing'
-            })
+            ipc.fix('message', { type: 'success', action: 'CORE_READY' })
+            ipc.emit('message', { type: 'success', action: 'NOTHING' })
         `
-        unistack.cache = {
-            system: {
+        unistack.getState = () => {
+            return {
+                processes: { core: null },
+                messenger: { core: null }
+            }
+        }
+        unistack.getSystemConstants = () => {
+            return {
                 root: unistackTmpPath,
                 environment: {
                     root: testPath
@@ -201,8 +262,8 @@ describe ('UniStackCLI initCoreProcess()', () => {
 
         let globalCoreProcess
         unistack.handleStatus = (status) => {
-            expect(status.type).toBe('something_other_than_ready')
-            expect(status.data).toBe('nothing')
+            expect(status.type).toBe('success')
+            expect(status.action).toBe('NOTHING')
             expect(unistack.handleStatus).toHaveBeenCalledTimes(1)
             Fs.removeSync(mockCoreInstanceFile)
             globalCoreProcess.destroy(done)
@@ -322,7 +383,13 @@ describe ('UniStackCLI throwAsyncError()', () => {
 describe ('UniStack promptForCommand()', () => {
     it ('should prompt for command', (done) => {
         const unistack = new UniStackCLI()
+
+        unistack.getState = () => {
+            return { transport: { message: Message } }
+        }
+
         const promise = unistack.promptForCommand()
+
         promise.ui.rl.emit('line', 'start')
         promise.then(result => {
             expect(result).toEqual({ command: 'start' })
@@ -339,11 +406,33 @@ describe ('UniStack validateCommand()', () => {
     })
     it ('should return error message if value is empty', () => {
         const unistack = new UniStackCLI()
-        const errorMessage = Config.message.instruction.EMPTY_COMMAND
+        unistack.getState = () => {
+            return { transport: { message: Message } }
+        }
+        const errorMessage = new Message('error', 'EMPTY_COMMAND').text
         let value
         value = ''
         expect(unistack.validateCommand(value)).toBe(errorMessage)
         value = '\n'
         expect(unistack.validateCommand(value)).toBe(errorMessage)
+    })
+})
+
+describe ('UniStackCLI initTransports()', () => {
+    it ('should store the message in the state object', () => {
+        const unistack = new UniStackCLI()
+        const state = { transport: {} }
+        const message = 'hello'
+        unistack.getTransport = () => message
+        unistack.getState = () => state
+        unistack.initTransports()
+        expect(state.transport.message).toBe(message)
+    })
+})
+
+describe ('UniStackCLI getTransport()', () => {
+    it ('should return message object', () => {
+        const unistack = new UniStackCLI()
+        expect(unistack.getTransport('message')).toBe(Message)
     })
 })
