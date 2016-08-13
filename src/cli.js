@@ -5,7 +5,7 @@ import Inquirer from 'inquirer'
 import TreeKill from 'tree-kill'
 import ChildProcess from 'child_process'
 import IPC from 'ipc-event-emitter'
-import Config from '../config-tmp.js'
+import Config from '../config.js'
 import State from './cli-state.js'
 import Transport from './transport/index.js'
 

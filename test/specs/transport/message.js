@@ -1,4 +1,4 @@
-import Config from '../../../config-tmp.js'
+import Config from '../../../config.js'
 import Message from '../../../src/transport/message.js'
 
 describe ('Message', () => {

@@ -1,4 +1,4 @@
-import Config from '../../../config-tmp.js'
+import Config from '../../../config.js'
 import Transport from '../../../src/transport/index.js'
 import Message from '../../../src/transport/message.js'
 

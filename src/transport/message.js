@@ -1,4 +1,4 @@
-import Config from '../../config-tmp.js'
+import Config from '../../config.js'
 import XRegExp from 'xregexp'
 
 class Message {

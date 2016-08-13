@@ -23,6 +23,7 @@ var rootPath = process.cwd()
 var tmpDirectory = path.join(rootPath, 'tmp')
 var bootstrapPath = path.join(rootPath, 'bootstrap')
 var environmentPath = path.join(rootPath, 'environment')
+var languagePath = path.join(rootPath, 'language')
 var testEnvironmentPath = config.environment.directory
 var testEnvironmentUniStackPath = path.join(
     testEnvironmentPath,
@@ -32,6 +33,10 @@ var testEnvironmentBootstrapPath = path.join(
     testEnvironmentUniStackPath,
     'bootstrap'
 )
+var testEnvironmentLanguagePath = path.join(
+    testEnvironmentUniStackPath,
+    'language'
+)
 
 var setupEnviroment = function () {
     fs.emptyDirSync(tmpDirectory)
@@ -39,11 +44,12 @@ var setupEnviroment = function () {
     fs.emptyDirSync(testEnvironmentPath)
     fs.ensureDirSync(testEnvironmentPath)
     fs.copySync(environmentPath, testEnvironmentPath)
+    fs.copySync(languagePath, testEnvironmentLanguagePath)
+    fs.copySync(bootstrapPath, testEnvironmentBootstrapPath)
     fs.copySync(
         path.join(rootPath, 'config.js'),
         path.join(testEnvironmentUniStackPath, 'config.js')
     )
-    fs.copySync(bootstrapPath, testEnvironmentBootstrapPath)
     return Promise.resolve()
 }
 

@@ -5,7 +5,7 @@ import BDDStdin from '../lib/bdd-stdin.js'
 import UniStackCLI from '../../src/cli.js'
 import State from '../../src/cli-state.js'
 import Transport from '../../src/transport/index.js'
-import Config from '../../config-tmp.js'
+import Config from '../../config.js'
 import Inquirer from 'inquirer'
 
 const unistackPath = Path.join(__dirname, '..', '..')
