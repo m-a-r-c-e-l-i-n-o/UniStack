@@ -74,7 +74,7 @@ describe ('UniStackCLI getSystemConstants()', () => {
 describe ('UniStackCLI init()', () => {
     it ('should return a promise and handle core process exit', (done) => {
         const unistack = new UniStackCLI
-        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test')
+        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', 'unistackcli-init')
         const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
         const content = `
             #!/usr/bin/env node
@@ -103,6 +103,7 @@ describe ('UniStackCLI init()', () => {
             expect(unistack.handleCoreProcessExitStatus).toHaveBeenCalledTimes(1)
             expect(unistack.handleCoreProcessExitStatus).toHaveBeenCalledWith(exitCode)
             expect(exitCode).toBe(111)
+            Fs.removeSync(unistackTmpPath)
             done()
         })
         .catch(e => console.error(e.stack))
@@ -152,18 +153,19 @@ describe ('UniStackCLI handleCoreProcessExitStatus()', () => {
 })
 
 describe ('UniStackCLI initCoreProcess()', () => {
-    let originalTimeout
+    const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', 'unistackcli-initcoreprocess')
+    let originalTimeout, mockCoreInstanceFile
     beforeEach(() => {
         originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL
         jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
+        mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
     })
     afterEach(() => {
         jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout
+        Fs.removeSync(unistackTmpPath)
     })
     it ('should start core process and open IPC channel', (done) => {
         const unistack = new UniStackCLI
-        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', '1')
-        const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
         const content = `
             #!/usr/bin/env node
             var IPC = require('ipc-event-emitter').default
@@ -190,15 +192,12 @@ describe ('UniStackCLI initCoreProcess()', () => {
 
         unistack.initCoreProcess().then(({ coreProcess, coreProcessIPC }) => {
             expect(coreProcessIPC).toBeDefined()
-            Fs.removeSync(mockCoreInstanceFile)
             coreProcess.destroy(done)
         })
         .catch(e => console.error(e.stack))
     })
     it ('should store the core process and ipc in the state object', (done) => {
         const unistack = new UniStackCLI
-        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', '2')
-        const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
         const content = `
             #!/usr/bin/env node
             var IPC = require('ipc-event-emitter').default
@@ -226,15 +225,12 @@ describe ('UniStackCLI initCoreProcess()', () => {
         unistack.initCoreProcess().then(({ coreProcess, coreProcessIPC }) => {
             expect(state.processes.core).toBe(coreProcess)
             expect(state.messenger.core).toBe(coreProcessIPC)
-            Fs.removeSync(mockCoreInstanceFile)
             coreProcess.destroy(done)
         })
         .catch(e => console.error(e.stack))
     })
     it ('should handle status updates from the core', (done) => {
         const unistack = new UniStackCLI
-        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', '3')
-        const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
         const content = `
             #!/usr/bin/env node
             var IPC = require('ipc-event-emitter').default
@@ -265,7 +261,6 @@ describe ('UniStackCLI initCoreProcess()', () => {
             expect(status.type).toBe('success')
             expect(status.action).toBe('NOTHING')
             expect(unistack.handleStatus).toHaveBeenCalledTimes(1)
-            Fs.removeSync(mockCoreInstanceFile)
             globalCoreProcess.destroy(done)
         }
         spyOn(unistack, 'handleStatus').and.callThrough()
