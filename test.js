@@ -55,9 +55,17 @@ var setupEnviroment = function () {
 
 var runNutra = function () {
     console.log('-Testing server...')
-    return nutra({
+    var options = {
         configFile: './nutra.config.js'
-    })
+    }
+    if (process.argv[2] === '--quick' && typeof process.argv[3] === 'string') {
+        const file = process.argv[3]
+        options.files = [
+            './test/specs/' + file,
+            './src/**/*.js'
+        ]
+    }
+    return nutra(options)
     .start()
     .then(exitCode => {
         if (exitCode === 0) {
