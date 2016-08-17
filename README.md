@@ -4,7 +4,7 @@
 
 **_UniStack is still under heavy construction and currently not in a usable state, but should be in beta by September 1st._**
 
-UniStack is a future proof, isomorphic JavaScript framework — bundled with all the features necessary for a modern, scalable application.
+UniStack is a future proof, isomorphic JavaScript framework — bundled with all the features necessary for a modern, scalable single-page application.
 
 Current features (no documentation yet):
 - Fully isomorphic (components, testing, etc)
@@ -21,6 +21,8 @@ Current features (no documentation yet):
 
 Pending features (no documentation yet):
 - Overwritable bootstrap. (Which means no hacks while waiting for pull requests. Also allows for replacement of React, Redux, and all the built-in server components with whatever, while keeping the rest of the environment features intact.)
+- Model-View-Controller (MVC) backend architecture
+- Simple CSS file preprocessing via Gulp plugins
 - GraphQL integration as the API for interacting with the server
 - Flow intergration (have seriously comtemplated typescript)
 - Quick install through npm
