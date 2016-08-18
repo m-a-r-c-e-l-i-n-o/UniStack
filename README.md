@@ -27,3 +27,14 @@ Pending features (no documentation yet):
 - Flow intergration (have seriously comtemplated typescript)
 - Quick install through npm
 - Open to suggestions!
+
+The Vision
+The main objective of UniStack is to get you up and running in a production
+ready environment with zero configuration. A typical starter workflow would be
+as follows:
+- Install UniStack globally using a package manager (i.e. npm)
+- Run the UniStack command (i.e. unistack init) on the desired directory
+- Create a react page component in the "shared/components" folder now present in the directory
+- Point an endpoint to the component using the routes file located in the "shared" folder
+
+<sub>*Established conventions for doing ajax calls and retrieval of data on the backend to populate dynamic components are included and will be documented once all features are complete.*</sub>
