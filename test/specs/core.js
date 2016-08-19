@@ -1,20 +1,16 @@
 import Fs from 'fs-extra'
 import Path from 'path'
-import TreeKill from 'tree-kill'
-import ChildProcess from 'child_process'
-import IPC from 'ipc-event-emitter'
 import IOClient from 'socket.io-client'
-import { createServer as CreateServer } from 'http'
 import UniStack from '../../src/core.js'
 import State from '../../src/core-state.js'
 import Config from '../../config.js'
 import Transport from '../../src/transport/index.js'
-import BDDStdin from '../lib/bdd-stdin.js'
 import ServerDestroy from 'server-destroy'
 import Mock from 'mock-require'
 
 const unistackPath = Path.join(__dirname, '..', '..')
 const unistackTmpPath = Path.join(unistackPath, 'tmp')
+const unistackTmpTestPath = Path.join(unistackTmpPath, 'test')
 const unistackEnvPath = Path.join(unistackPath, 'environment')
 const envPath = Config.environment.directory
 const envUnistackPath = Path.join(envPath, 'node_modules', 'unistack')
@@ -272,7 +268,6 @@ describe ('UniStack resolveConfig()', () => {
 
 describe ('UniStack isEnvironmentEmpty()', () => {
     const unistack = new UniStack()
-    const enviroment = Path.join(unistackPath, 'environment')
     const tmpEnvRename = Path.join(unistackTmpPath, 'environment')
     beforeEach(() => {
         // backup current enviroment
@@ -764,7 +759,6 @@ describe ('UniStack rebuildBundles()', () => {
 
 describe ('UniStack setupEnvironment()', () => {
     const unistack = new UniStack()
-    const enviroment = Path.join(unistackPath, 'environment')
     const tmpEnvRename = Path.join(unistackTmpPath, 'environment')
 
     beforeEach(() => {
@@ -780,22 +774,25 @@ describe ('UniStack setupEnvironment()', () => {
         Fs.renameSync(tmpEnvRename, envPath)
     })
     it ('should create files and folders in the environment directory', () => {
+        const clientFolder = Path.join(envPath, 'src','client')
+        const serverFolder = Path.join(envPath, 'src','server')
+        const sharedFolder = Path.join(envPath, 'src','shared')
         unistack.setupEnvironment().then(() => {
             const filenames = [
-                Path.join(envPath, 'src','client', 'index.js'),
-                Path.join(envPath, 'src','client', 'css', 'preprocessor', 'production.js'),
-                Path.join(envPath, 'src','client', 'css', 'preprocessor', 'development.js'),
-                Path.join(envPath, 'src','client', 'test', 'specs', 'index.js'),
-                Path.join(envPath, 'src','server', 'components', 'layout.js'),
-                Path.join(envPath, 'src','server', 'test', 'specs', 'index.js'),
-                Path.join(envPath, 'src','server', 'index.js'),
-                Path.join(envPath, 'src','shared', 'routes.js'),
-                Path.join(envPath, 'src','shared', 'actions', 'index.js'),
-                Path.join(envPath, 'src','shared', 'components', '404.js'),
-                Path.join(envPath, 'src','shared', 'components', 'App.js'),
-                Path.join(envPath, 'src','shared', 'components', 'HelloWorld.js'),
-                Path.join(envPath, 'src','shared', 'containers', 'index.js'),
-                Path.join(envPath, 'src','shared', 'reducers', 'index.js')
+                Path.join(clientFolder, 'index.js'),
+                Path.join(clientFolder, 'css', 'preprocessor', 'production.js'),
+                Path.join(clientFolder, 'css', 'preprocessor', 'development.js'),
+                Path.join(clientFolder, 'test', 'specs', 'index.js'),
+                Path.join(serverFolder, 'components', 'layout.js'),
+                Path.join(serverFolder, 'test', 'specs', 'index.js'),
+                Path.join(serverFolder, 'index.js'),
+                Path.join(sharedFolder, 'routes.js'),
+                Path.join(sharedFolder, 'actions', 'index.js'),
+                Path.join(sharedFolder, 'components', '404.js'),
+                Path.join(sharedFolder, 'components', 'App.js'),
+                Path.join(sharedFolder, 'components', 'HelloWorld.js'),
+                Path.join(sharedFolder, 'containers', 'index.js'),
+                Path.join(sharedFolder, 'reducers', 'index.js')
             ]
             filenames.forEach(filename => {
                 expect(() => Fs.lstatSync(filename)).not.toThrowError()
@@ -807,7 +804,6 @@ describe ('UniStack setupEnvironment()', () => {
 
 describe ('UniStack destroyProject()', () => {
     const unistack = new UniStack()
-    const enviroment = Path.join(unistackPath, 'environment')
     const tmpEnvRename = Path.join(unistackTmpPath, 'environment')
 
     beforeEach(() => {
@@ -868,14 +864,13 @@ describe ('UniStack.setupPackageJSON()', () => {
 })
 
 describe ('UniStack.isUnistackEnvironment()', () => {
+    const tmpPackageJSONFile = Path.join(unistackTmpTestPath, 'package.json')
     it ('should resolve when unistack property is present in package.json file', (done) => {
         const unistack = new UniStack()
-        const tmpPackageJSONPath = Path.join(unistackTmpPath, 'test')
-        const tmpPackageJSONFile = Path.join(tmpPackageJSONPath, 'package.json')
         // package.json path
         unistack.cache.system = {
             environment: {
-                root: tmpPackageJSONPath
+                root: unistackTmpTestPath
             }
         }
         Fs.outputFileSync(tmpPackageJSONFile, JSON.stringify({ unistack: true }))
@@ -891,13 +886,11 @@ describe ('UniStack.isUnistackEnvironment()', () => {
     it ('should throw error when unistack property is falsy', (done) => {
         const unistack = new UniStack()
         const errorMock = { message: 'NOT_UNISTACK_ENVIRONMENT' }
-        const tmpPackageJSONPath = Path.join(unistackTmpPath, 'test')
-        const tmpPackageJSONFile = Path.join(tmpPackageJSONPath, 'package.json')
         Fs.outputFileSync(tmpPackageJSONFile, JSON.stringify({}))
         // package.json path
         unistack.cache.system = {
             environment: {
-                root: tmpPackageJSONPath
+                root: unistackTmpTestPath
             }
         }
         unistack.isUnistackEnvironment()
@@ -911,12 +904,10 @@ describe ('UniStack.isUnistackEnvironment()', () => {
     it ('should throw error when package.json file could not be required', (done) => {
         const unistack = new UniStack()
         const errorMock = { message: 'NO_ENVIRONMENT_PACKAGE_JSON_FILE' }
-        const tmpPackageJSONPath = Path.join(unistackTmpPath, 'test')
-        const tmpPackageJSONFile = Path.join(tmpPackageJSONPath, 'package.json')
         // package.json path
         unistack.cache.system = {
             environment: {
-                root: tmpPackageJSONPath
+                root: unistackTmpTestPath
             }
         }
         unistack.isUnistackEnvironment()
@@ -930,7 +921,6 @@ describe ('UniStack.isUnistackEnvironment()', () => {
 if (!process.env.QUICK_TEST_RUN) {
     describe ('UniStack installNPMDependencies()', () => {
         const unistack = new UniStack()
-        const enviroment = Path.join(unistackPath, 'environment')
         const tmpEnvRename = Path.join(unistackTmpPath, 'environment')
 
         let originalTimeout

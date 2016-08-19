@@ -1,7 +1,6 @@
 import Fs from 'fs-extra'
 import Path from 'path'
 import ChildProcess from 'child_process'
-import BDDStdin from '../lib/bdd-stdin.js'
 import UniStackCLI from '../../src/cli.js'
 import State from '../../src/cli-state.js'
 import Transport from '../../src/transport/index.js'
@@ -10,6 +9,7 @@ import Inquirer from 'inquirer'
 
 const unistackPath = Path.join(__dirname, '..', '..')
 const unistackTmpPath = Path.join(unistackPath, 'tmp')
+const unistackTmpTestPath = Path.join(unistackTmpPath, 'test')
 const unistackEnvPath = Path.join(unistackPath, 'environment')
 const envPath = Config.environment.directory
 const testPath = Path.join(unistackPath, 'test')
@@ -74,7 +74,8 @@ describe ('UniStackCLI getSystemConstants()', () => {
 describe ('UniStackCLI init()', () => {
     it ('should return a promise and handle core process exit', (done) => {
         const unistack = new UniStackCLI
-        const unistackTmpPath = Path.join(unistackPath, 'tmp', 'test', 'unistackcli-init')
+
+        const unistackTmpPath = Path.join(unistackTmpTestPath, 'unistackcli-init')
         const mockCoreInstanceFile = Path.join(unistackTmpPath, 'bin', 'core-instance.js')
         const content = `
             #!/usr/bin/env node
