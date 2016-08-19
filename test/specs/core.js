@@ -614,17 +614,19 @@ describe ('UniStack rebuildBundles()', () => {
         const browserSpy = jasmine.createSpy('browserSpy')
         const nodeSpy = jasmine.createSpy('nodeSpy')
         // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
+        unistack.getState = () => {
+            return {
+                environment: {
+                    bundles: {
+                        browser: {
+                            bundler: {
+                                build: () => Promise.resolve(browserSpy('browser'))
+                            }
+                        },
+                        node: {
+                            bundler: {
+                                build: () => Promise.resolve(nodeSpy('node'))
+                            }
                         }
                     }
                 }
@@ -644,17 +646,19 @@ describe ('UniStack rebuildBundles()', () => {
         const browserSpy = jasmine.createSpy('browserSpy')
         const nodeSpy = jasmine.createSpy('nodeSpy')
         // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
+        unistack.getState = () => {
+            return {
+                environment: {
+                    bundles: {
+                        browser: {
+                            bundler: {
+                                build: () => Promise.resolve(browserSpy('browser'))
+                            }
+                        },
+                        node: {
+                            bundler: {
+                                build: () => Promise.resolve(nodeSpy('node'))
+                            }
                         }
                     }
                 }
@@ -676,17 +680,19 @@ describe ('UniStack rebuildBundles()', () => {
         const browserSpy = jasmine.createSpy('browserSpy')
         const nodeSpy = jasmine.createSpy('nodeSpy')
         // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
+        unistack.getState = () => {
+            return {
+                environment: {
+                    bundles: {
+                        browser: {
+                            bundler: {
+                                build: () => Promise.resolve(browserSpy('browser'))
+                            }
+                        },
+                        node: {
+                            bundler: {
+                                build: () => Promise.resolve(nodeSpy('node'))
+                            }
                         }
                     }
                 }
@@ -709,17 +715,19 @@ describe ('UniStack rebuildBundles()', () => {
         const browserSpy = jasmine.createSpy('browserSpy')
         const nodeSpy = jasmine.createSpy('nodeSpy')
         // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    browser: {
-                        bundler: {
-                            build: () => Promise.resolve(browserSpy('browser'))
-                        }
-                    },
-                    node: {
-                        bundler: {
-                            build: () => Promise.resolve(nodeSpy('node'))
+        unistack.getState = () => {
+            return {
+                environment: {
+                    bundles: {
+                        browser: {
+                            bundler: {
+                                build: () => Promise.resolve(browserSpy('browser'))
+                            }
+                        },
+                        node: {
+                            bundler: {
+                                build: () => Promise.resolve(nodeSpy('node'))
+                            }
                         }
                     }
                 }
@@ -737,12 +745,14 @@ describe ('UniStack rebuildBundles()', () => {
         const unistack = new UniStack()
         const mockError = new Error('Mock Error!')
         // mock bundler
-        unistack.cache.state = {
-            environment: {
-                bundles: {
-                    node: {
-                        bundler: {
-                            build: () => Promise.reject(mockError)
+        unistack.getState = () => {
+            return {
+                environment: {
+                    bundles: {
+                        node: {
+                            bundler: {
+                                build: () => Promise.reject(mockError)
+                            }
                         }
                     }
                 }
@@ -1123,11 +1133,13 @@ describe ('UniStack handleFileChange()', () => {
 describe ('UniStack haltNodeBundle()', () => {
     const unistack = new UniStack()
     it ('should terminate node bundle\'s process', (done) => {
-        unistack.cache.state = {
-            environment: {
-                server: {
-                    destroy: () => {
-                        done()
+        unistack.getState = () => {
+            return {
+                environment: {
+                    server: {
+                        destroy: () => {
+                            done()
+                        }
                     }
                 }
             }
@@ -1139,11 +1151,13 @@ describe ('UniStack haltNodeBundle()', () => {
 describe ('UniStack destroyReloader()', () => {
     const unistack = new UniStack()
     it ('should destroy reloader server', (done) => {
-        unistack.cache.state = {
-            reloader: {
-                server: {
-                    destroy: () => {
-                        done()
+        unistack.getState = () => {
+            return {
+                reloader: {
+                    server: {
+                        destroy: () => {
+                            done()
+                        }
                     }
                 }
             }
@@ -1153,17 +1167,18 @@ describe ('UniStack destroyReloader()', () => {
 })
 
 describe ('UniStack destroyWatcher()', () => {
-    const unistack = new UniStack()
     it ('should destroy watcher server', (done) => {
-        unistack.cache.state = {
+        const unistack = new UniStack()
+        const state = {
             watcher: {
                 server: {
                     close: jasmine.createSpy('close')
                 }
             }
         }
+        unistack.getState = () => state
         unistack.destroyWatcher().then(() => {
-            expect(unistack.cache.state.watcher.server.close)
+            expect(state.watcher.server.close)
             .toHaveBeenCalledTimes(1)
             done()
         })
