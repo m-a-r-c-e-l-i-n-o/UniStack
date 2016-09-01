@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/m-a-r-c-e-l-i-n-o/unistack/badge.svg?branch=master)](https://coveralls.io/github/m-a-r-c-e-l-i-n-o/unistack?branch=master)
 [![Build Status](https://travis-ci.org/m-a-r-c-e-l-i-n-o/unistack.svg?branch=master)](https://travis-ci.org/m-a-r-c-e-l-i-n-o/unistack)
 
-**_UniStack is still under heavy construction and currently not in a usable state, but should be in beta by September 1st._**
+**_UniStack is still under heavy construction and currently not in a usable state, but should be in beta by October 1st._**
 
 UniStack is a future proof, isomorphic JavaScript framework — bundled with all the features necessary for a modern, scalable single-page application.
 
@@ -28,7 +28,7 @@ Pending features (no documentation yet):
 - Quick install through npm
 - Open to suggestions!
 
-The Vision
+#### The Vision:
 The main objective of UniStack is to get you up and running in a production
 ready environment with zero configuration. A typical starter workflow would be
 as follows:
