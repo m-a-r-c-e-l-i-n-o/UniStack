@@ -1,10 +1,9 @@
 var Path = require('path')
-var Transport = require('./language/transport/index.js')
 
 var Config = {
     environment: {},
     transport: {
-        message: Transport.message
+        message: {}
     },
     server: {},
     hostName: 'localhost',

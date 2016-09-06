@@ -1,15 +1,16 @@
 {
   "name": "unistack",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "description": "UniStack is a modern javascript framework.",
   "main": "./dist/unistack.js",
   "scripts": {
-    "test": "./test.js",
-    "test-quick": "npm run build && ./test.js --quick",
+    "test": "npm run build && node ./test.js --quick",
+    "test-quick": "npm run build && node ./test.js --quick",
     "encrypt-saucelabs": "gpg -c .saucelabs",
     "decrypt-saucelabs": "echo $super_secret_password | gpg --passphrase-fd 0 .saucelabs.gpg",
     "build": "babel src --out-dir dist",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "next-update": "next-update -k true --tldr"
   },
   "bin": {
     "unistack": "./bin/unistack.js"
@@ -35,36 +36,43 @@
   "homepage": "https://github.com/m-a-r-c-e-l-i-n-o/unistack#readme",
   "devDependencies": {
     "babel-cli": "6.10.1",
-    "babel-preset-es2016-node5": "^1.1.2"
+    "babel-plugin-transform-object-rest-spread": "^6.8.0",
+    "babel-preset-es2016-node5": "^1.1.2",
+    "next-update": "^1.5.0"
   },
   "dependencies": {
     "argv": "0.0.2",
     "coveralls": "^2.11.11",
+    "debug": "^2.2.0",
+    "file-exists": "^2.0.0",
     "fs-extra": "^0.30.0",
     "gaze": "^1.1.0",
+    "gotta-catch-em-all": "0.0.3",
     "gulp": "github:gulpjs/gulp#4.0",
     "inquirer": "^1.1.2",
     "ipc-event-emitter": "^1.0.0",
-    "jspm": "^0.17.0-beta.22",
-    "jspm-dev-builder": "github:m-a-r-c-e-l-i-n-o/jspm-dev-builder",
+    "jspm": "^0.17.0-beta.28",
     "karma": "^1.1.1",
     "karma-coverage": "^1.0.0",
     "karma-jasmine": "^1.0.2",
-    "karma-jspm": "github:m-a-r-c-e-l-i-n-o/karma-jspm#ideal",
     "karma-sauce-launcher": "^1.0.0",
     "lodash": "^4.13.1",
     "minimatch": "^3.0.2",
     "mock-require": "^1.3.0",
     "mock-stdin": "^0.3.0",
-    "nutra": "0.0.12",
-    "nutra-jasmine-coverage-babel-preset": "0.0.4",
+    "nutra": "0.0.13",
+    "nutra-jasmine-coverage-babel-preset": "0.0.6",
     "nutra-jspm": "0.0.2",
     "nutra-minimal-reporter": "0.0.2",
+    "nutra-mock": "0.0.9",
+    "redux": "^3.5.2",
+    "redux-thunk": "^2.1.0",
     "server-destroy": "^1.0.1",
     "socket.io": "^1.4.8",
     "socket.io-client": "^1.4.8",
     "source-map-support": "^0.4.2",
     "tree-kill": "^1.1.0",
+    "typechecker": "^4.3.0",
     "xregexp": "^3.1.1"
   }
 }
