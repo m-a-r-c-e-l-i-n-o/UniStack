@@ -1,11 +1,8 @@
 import { combineReducers } from 'redux'
 import { routerReducer } from 'react-router-redux'
-import pageAssets from './page-assets.js'
+import appReducers from 'app/reducers/index.js'
 
-const envReducers = {}
-const reducers = Object.assign({}, envReducers, {
-    pageAssets,
+export default combineReducers({
+    ...appReducers,
     routing: routerReducer
 })
-
-export default combineReducers(reducers)

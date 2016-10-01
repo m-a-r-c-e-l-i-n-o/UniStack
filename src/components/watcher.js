@@ -2,7 +2,7 @@ import path from 'path'
 import createDebugger from 'debug'
 import Gaze from 'gaze'
 import { modifiedFile } from '../helpers/formatted-file.js'
-import { ENV_BOOT_PATH } from '../constants/paths.js'
+import { ENV_PATH } from '../constants/paths.js'
 import {
     SET_WATCHER_PREPARATIONS,
     CLEAR_WATCHER_PREPARATIONS
@@ -17,9 +17,10 @@ const Watcher = ({ dispatch, getState }) => {
     const watching = getStateLeaf(state, 'WATCHING')
     debug('Checking if it is worth watching the files...')
     if (watch && !watching) {
-        debug('!!!!--Preparing to watch files from ')
+        const pattern = path.join(ENV_PATH, '{src,dist/css}', '**/*')
+        debug('!!!!--Preparing to watch files: %s', pattern)
         dispatch({ type: SET_WATCHER_PREPARATIONS })
-        const gaze = new Gaze(path.join(ENV_BOOT_PATH, 'src', '**/*'))
+        const gaze = new Gaze(pattern)
         gaze.on('all', (event, filepath) => {
             const formattedFile = modifiedFile(filepath, event)
             debug('Emitting file change: %s - %s', event, filepath)

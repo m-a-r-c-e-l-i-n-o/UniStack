@@ -1,7 +1,6 @@
 import HotReloader from 'systemjs-hot-reloader/hot-reloader.js'
 
 const hotReloader = new HotReloader( '//localhost:5776')
-
 hotReloader.socket.on( 'connect', () => {
     console.log( 'Socket connected!' )
 })

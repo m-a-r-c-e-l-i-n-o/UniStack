@@ -16,7 +16,6 @@
     },
     "dependencies": {
       "graceful-fs": "npm:graceful-fs@^4.1.6",
-      "jsdom": "npm:jsdom@^9.5.0",
       "koa": "npm:koa@2",
       "koa-send": "npm:koa-send@^3.2.0",
       "react-deep-force-update": "npm:react-deep-force-update@^2.0.1",
@@ -94,9 +93,6 @@
           "tty": "@node/tty",
           "util": "@node/util"
         }
-      },
-      "npm:esprima@2.7.3": {
-        "jspmNodeConversion": false
       },
       "npm:inherits@2.0.1": {
         "ignore": [

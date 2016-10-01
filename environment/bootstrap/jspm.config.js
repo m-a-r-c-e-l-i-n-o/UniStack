@@ -3,7 +3,7 @@ SystemJS.config({
     "npm:": "bootstrap/jspm_packages/npm/",
     "github:": "bootstrap/jspm_packages/github/",
     "unistack/": "bootstrap/src/",
-    "your-app/": "src/"
+    "app/": "src/"
   },
   browserConfig: {
     "baseURL": "/",
@@ -49,7 +49,7 @@ SystemJS.config({
   },
   transpiler: "plugin-babel",
   packages: {
-    "your-app": {
+    "app": {
       "format": "esm",
       "map": {
         "unistats": "bootstrap/src/unistats.js"
@@ -108,7 +108,6 @@ SystemJS.config({
     "https": "github:jspm/nodelibs-https@0.2.0-alpha",
     "jodid25519": "npm:jodid25519@1.0.2",
     "jsbn": "npm:jsbn@0.1.0",
-    "jsdom": "npm:jsdom@9.5.0",
     "koa": "npm:koa@2.0.0",
     "koa-send": "npm:koa-send@3.2.0",
     "module": "github:jspm/nodelibs-module@0.2.0-alpha",
@@ -616,240 +615,6 @@ SystemJS.config({
     "npm:koa-compose@3.1.0": {
       "map": {
         "any-promise": "npm:any-promise@1.3.0"
-      }
-    },
-    "npm:jsdom@9.5.0": {
-      "map": {
-        "array-equal": "npm:array-equal@1.0.0",
-        "acorn": "npm:acorn@2.7.0",
-        "cssom": "npm:cssom@0.3.1",
-        "symbol-tree": "npm:symbol-tree@3.1.4",
-        "cssstyle": "npm:cssstyle@0.2.37",
-        "escodegen": "npm:escodegen@1.8.1",
-        "nwmatcher": "npm:nwmatcher@1.3.8",
-        "parse5": "npm:parse5@1.5.1",
-        "tough-cookie": "npm:tough-cookie@2.3.1",
-        "webidl-conversions": "npm:webidl-conversions@3.0.1",
-        "xml-name-validator": "npm:xml-name-validator@2.0.1",
-        "iconv-lite": "npm:iconv-lite@0.4.13",
-        "abab": "npm:abab@1.0.3",
-        "acorn-globals": "npm:acorn-globals@1.0.9",
-        "whatwg-url": "npm:whatwg-url@3.0.0",
-        "sax": "npm:sax@1.2.1",
-        "request": "npm:request@2.74.0",
-        "canvas": "@empty"
-      }
-    },
-    "npm:cssstyle@0.2.37": {
-      "map": {
-        "cssom": "npm:cssom@0.3.1"
-      }
-    },
-    "npm:acorn-globals@1.0.9": {
-      "map": {
-        "acorn": "npm:acorn@2.7.0"
-      }
-    },
-    "npm:whatwg-url@3.0.0": {
-      "map": {
-        "webidl-conversions": "npm:webidl-conversions@3.0.1",
-        "tr46": "npm:tr46@0.0.3"
-      }
-    },
-    "npm:escodegen@1.8.1": {
-      "map": {
-        "optionator": "npm:optionator@0.8.1",
-        "estraverse": "npm:estraverse@1.9.3",
-        "esprima": "npm:esprima@2.7.3",
-        "esutils": "npm:esutils@2.0.2"
-      }
-    },
-    "npm:request@2.74.0": {
-      "map": {
-        "tough-cookie": "npm:tough-cookie@2.3.1",
-        "aws-sign2": "npm:aws-sign2@0.6.0",
-        "aws4": "npm:aws4@1.4.1",
-        "bl": "npm:bl@1.1.2",
-        "combined-stream": "npm:combined-stream@1.0.5",
-        "extend": "npm:extend@3.0.0",
-        "har-validator": "npm:har-validator@2.0.6",
-        "forever-agent": "npm:forever-agent@0.6.1",
-        "form-data": "npm:form-data@1.0.1",
-        "hawk": "npm:hawk@3.1.3",
-        "is-typedarray": "npm:is-typedarray@1.0.0",
-        "json-stringify-safe": "npm:json-stringify-safe@5.0.1",
-        "isstream": "npm:isstream@0.1.2",
-        "oauth-sign": "npm:oauth-sign@0.8.2",
-        "qs": "npm:qs@6.2.1",
-        "caseless": "npm:caseless@0.11.0",
-        "stringstream": "npm:stringstream@0.0.5",
-        "tunnel-agent": "npm:tunnel-agent@0.4.3",
-        "mime-types": "npm:mime-types@2.1.11",
-        "http-signature": "npm:http-signature@1.1.1",
-        "node-uuid": "npm:node-uuid@1.4.7"
-      }
-    },
-    "npm:optionator@0.8.1": {
-      "map": {
-        "prelude-ls": "npm:prelude-ls@1.1.2",
-        "deep-is": "npm:deep-is@0.1.3",
-        "wordwrap": "npm:wordwrap@1.0.0",
-        "type-check": "npm:type-check@0.3.2",
-        "levn": "npm:levn@0.3.0",
-        "fast-levenshtein": "npm:fast-levenshtein@1.1.4"
-      }
-    },
-    "npm:form-data@1.0.1": {
-      "map": {
-        "mime-types": "npm:mime-types@2.1.11",
-        "combined-stream": "npm:combined-stream@1.0.5",
-        "async": "npm:async@2.0.1"
-      }
-    },
-    "npm:type-check@0.3.2": {
-      "map": {
-        "prelude-ls": "npm:prelude-ls@1.1.2"
-      }
-    },
-    "npm:levn@0.3.0": {
-      "map": {
-        "prelude-ls": "npm:prelude-ls@1.1.2",
-        "type-check": "npm:type-check@0.3.2"
-      }
-    },
-    "npm:bl@1.1.2": {
-      "map": {
-        "readable-stream": "npm:readable-stream@2.0.6"
-      }
-    },
-    "npm:combined-stream@1.0.5": {
-      "map": {
-        "delayed-stream": "npm:delayed-stream@1.0.0"
-      }
-    },
-    "npm:hawk@3.1.3": {
-      "map": {
-        "boom": "npm:boom@2.10.1",
-        "sntp": "npm:sntp@1.0.9",
-        "cryptiles": "npm:cryptiles@2.0.5",
-        "hoek": "npm:hoek@2.16.3"
-      }
-    },
-    "npm:har-validator@2.0.6": {
-      "map": {
-        "chalk": "npm:chalk@1.1.3",
-        "commander": "npm:commander@2.9.0",
-        "is-my-json-valid": "npm:is-my-json-valid@2.13.1",
-        "pinkie-promise": "npm:pinkie-promise@2.0.1"
-      }
-    },
-    "npm:http-signature@1.1.1": {
-      "map": {
-        "jsprim": "npm:jsprim@1.3.0",
-        "assert-plus": "npm:assert-plus@0.2.0",
-        "sshpk": "npm:sshpk@1.10.0"
-      }
-    },
-    "npm:boom@2.10.1": {
-      "map": {
-        "hoek": "npm:hoek@2.16.3"
-      }
-    },
-    "npm:sntp@1.0.9": {
-      "map": {
-        "hoek": "npm:hoek@2.16.3"
-      }
-    },
-    "npm:sshpk@1.10.0": {
-      "map": {
-        "assert-plus": "npm:assert-plus@1.0.0",
-        "getpass": "npm:getpass@0.1.6",
-        "dashdash": "npm:dashdash@1.14.0",
-        "asn1": "npm:asn1@0.2.3"
-      }
-    },
-    "npm:cryptiles@2.0.5": {
-      "map": {
-        "boom": "npm:boom@2.10.1"
-      }
-    },
-    "npm:readable-stream@2.0.6": {
-      "map": {
-        "core-util-is": "npm:core-util-is@1.0.2",
-        "string_decoder": "npm:string_decoder@0.10.31",
-        "process-nextick-args": "npm:process-nextick-args@1.0.7",
-        "util-deprecate": "npm:util-deprecate@1.0.2",
-        "isarray": "npm:isarray@1.0.0",
-        "inherits": "npm:inherits@2.0.1"
-      }
-    },
-    "npm:commander@2.9.0": {
-      "map": {
-        "graceful-readlink": "npm:graceful-readlink@1.0.1"
-      }
-    },
-    "npm:chalk@1.1.3": {
-      "map": {
-        "ansi-styles": "npm:ansi-styles@2.2.1",
-        "has-ansi": "npm:has-ansi@2.0.0",
-        "strip-ansi": "npm:strip-ansi@3.0.1",
-        "supports-color": "npm:supports-color@2.0.0",
-        "escape-string-regexp": "npm:escape-string-regexp@1.0.5"
-      }
-    },
-    "npm:is-my-json-valid@2.13.1": {
-      "map": {
-        "generate-object-property": "npm:generate-object-property@1.2.0",
-        "generate-function": "npm:generate-function@2.0.0",
-        "xtend": "npm:xtend@4.0.1",
-        "jsonpointer": "npm:jsonpointer@2.0.0"
-      }
-    },
-    "npm:pinkie-promise@2.0.1": {
-      "map": {
-        "pinkie": "npm:pinkie@2.0.4"
-      }
-    },
-    "npm:jsprim@1.3.0": {
-      "map": {
-        "json-schema": "npm:json-schema@0.2.2",
-        "verror": "npm:verror@1.3.6",
-        "extsprintf": "npm:extsprintf@1.0.2"
-      }
-    },
-    "npm:verror@1.3.6": {
-      "map": {
-        "extsprintf": "npm:extsprintf@1.0.2"
-      }
-    },
-    "npm:dashdash@1.14.0": {
-      "map": {
-        "assert-plus": "npm:assert-plus@1.0.0"
-      }
-    },
-    "npm:getpass@0.1.6": {
-      "map": {
-        "assert-plus": "npm:assert-plus@1.0.0"
-      }
-    },
-    "npm:has-ansi@2.0.0": {
-      "map": {
-        "ansi-regex": "npm:ansi-regex@2.0.0"
-      }
-    },
-    "npm:strip-ansi@3.0.1": {
-      "map": {
-        "ansi-regex": "npm:ansi-regex@2.0.0"
-      }
-    },
-    "npm:generate-object-property@1.2.0": {
-      "map": {
-        "is-property": "npm:is-property@1.0.2"
-      }
-    },
-    "npm:async@2.0.1": {
-      "map": {
-        "lodash": "npm:lodash@4.15.0"
       }
     },
     "npm:source-map-support@0.4.2": {

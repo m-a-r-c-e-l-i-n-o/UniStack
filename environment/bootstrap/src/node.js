@@ -8,9 +8,10 @@ import { renderToString, renderToStaticMarkup } from 'react-dom/server'
 import { Provider } from 'react-redux'
 import { match, RouterContext } from 'react-router'
 import createSharedStore from './store.js'
-import Routes from './routes.js'
+import routes from 'app/routes.js'
 import reducers from './reducers/index.js'
 import Layout from './layout.js'
+import PageAssets from './components/containers/page-assets.js'
 
 const app = new Koa()
 
@@ -18,17 +19,29 @@ const renderHTML = (componentProps) => {
     const store = createSharedStore()
     const componentHTML = renderToString(
         <Provider store={store}>
-            <RouterContext {...componentProps} />
+            <div>
+                <PageAssets/>
+                <RouterContext {...componentProps} />
+            </div>
         </Provider>
     )
     const state = store.getState()
     const pageAssets = state.pageAssets
     const title = pageAssets.title
+    const config = { initialRender: true, state }
     const bodyScripts = [
         { src: '/bootstrap/jspm_packages/system.src.js' },
         { src: '/bootstrap/jspm.config.js' },
-        { innerHTML: `window.__UNISTACK_STATE__ =  ${JSON.stringify(state)}` },
-        { innerHTML: 'System.trace = true; System.import("unistack/browser.js")' },
+        { innerHTML: `window.__UNISTACK__ = ${JSON.stringify(config)};` },
+        { innerHTML: 'System.trace = true;' },
+        { innerHTML: `
+            System.import("unistack/browser.js")
+            .then(function () {
+                window.__UNISTACK__.initialRender = false
+                console.log('Local components are now synced with server rendered components.')
+            })
+            .catch(e => console.log(e));`
+        },
         ...pageAssets.bodyScripts
     ]
     const layoutHTML =
@@ -46,7 +59,7 @@ const renderHTML = (componentProps) => {
 
 const matchRoute = (location) => {
     return new Promise((resolve, reject) => {
-        match({ routes: Routes, location }, (error, redirect, renderProps) => {
+        match({ routes, location }, (error, redirect, renderProps) => {
             resolve({ error, redirect, renderProps })
         })
     })

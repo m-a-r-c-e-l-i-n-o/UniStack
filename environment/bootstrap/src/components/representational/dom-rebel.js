@@ -1,25 +1,46 @@
 import React from 'react'
 import { platform } from '../../unistats.js'
-import unidocument from '../../#{unistats|platform}/unidocument.js'
+import uniwindow from '../../#{unistats|platform}/uniwindow.js'
 
 const DomRebel = ({ title, bodyScripts }) => {
     if (platform === 'node') return null
-    const unidoc = unidocument()
-    unidoc.title = title
-    const existingBodyScripts = unidoc.body.getElementsByTagName('script')
-    Object.keys(existingBodyScripts).map(key => obj[key]).forEach(script => {
-        script.parentNode.removeChild(script)
-    })
-    insertScripts(bodyScripts, unidoc.body, unidoc)
+    const unidoc = uniwindow.document
+    if (unidoc.title !== title) {
+        // console.log('About to update title', title)
+        unidoc.title = title
+    }
+    if (!uniwindow.__UNISTACK__.initialRender) {
+        // console.log('About to update bodyScripts', bodyScripts)
+        const existingBodyScripts = unidoc.body.getElementsByTagName('script')
+        clearExistingScripts(existingBodyScripts)
+        insertScripts(bodyScripts, unidoc.body, unidoc)
+    }
     return null
+}
+
+const clearExistingScripts = (scripts) => {
+    const baseURL = window.location.origin
+    Object
+    .keys(scripts)
+    .map(key => {
+        const element = scripts[key]
+        const relativePath = element.src.replace(baseURL, '')
+        return { element, relativePath }
+    })
+    .forEach(({ element, relativePath }) => {
+        if (relativePath.startsWith('/dist')) {
+            // console.log('Removed external', relativePath)
+            element.parentNode.removeChild(element)
+        }
+    })
 }
 
 // reference:
 // http://stackoverflow.com/questions/17380744/replace-dom-with-javascript-and-run-new-scripts
-const insertScripts = (scripts, element, unidoc) => {
-    const script = scripts.shift()
-    if (!script) return
+const insertScripts = (scripts, element, unidoc, index = 0) => {
+    if (scripts.length === index) return
 
+    const script = scripts[index]
     const newscript = unidoc.createElement('script')
     // External?
     if (script.src) {
@@ -40,14 +61,14 @@ const insertScripts = (scripts, element, unidoc) => {
     function continueLoadingOnLoad() {
         // Defend against duplicate calls
         if (this === newscript) {
-            insertScripts(scripts, element, unidoc)
+            insertScripts(scripts, element, unidoc, ++index)
         }
     }
     // Callback on most browsers when a script fails to load
     function continueLoadingOnError() {
         // Defend against duplicate calls
         if (this === newscript) {
-            insertScripts(scripts, element, unidoc)
+            insertScripts(scripts, element, unidoc, ++index)
         }
     }
     // Callback on IE when a script's loading status changes
@@ -55,7 +76,7 @@ const insertScripts = (scripts, element, unidoc) => {
         // Defend against duplicate calls and check whether the
         // script is complete (complete = loaded or error)
         if (this === newscript && this.readyState === 'complete') {
-            insertScripts(scripts, element, unidoc)
+            insertScripts(scripts, element, unidoc, ++index)
         }
     }
 }
