@@ -1,7 +1,5 @@
-import pageAssets from './page-assets.js'
+import button from './button.js'
 
-const reducers = ({
-    pageAssets
-})
+const reducers = ({ button })
 
 export default reducers

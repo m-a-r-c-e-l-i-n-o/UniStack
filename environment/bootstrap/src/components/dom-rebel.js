@@ -1,21 +1,38 @@
 import React from 'react'
-import { platform } from '../../unistats.js'
-import uniwindow from '../../#{unistats|platform}/uniwindow.js'
+import { platform } from '../unistats.js'
+import uniwindow from '../#{unistats|platform}/uniwindow.js'
+import { initialRender } from '../helpers/helpers.js'
 
-const DomRebel = ({ title, bodyScripts }) => {
+const DomRebel = ({ dispatch, getState }) => {
     if (platform === 'node') return null
+    if (initialRender()) return null
+
+    const page = getState().page
     const unidoc = uniwindow.document
-    if (unidoc.title !== title) {
-        // console.log('About to update title', title)
-        unidoc.title = title
+    const {
+        baseTitle: { children: baseTitle },
+        title: { children: title }
+    } = page
+    setTitle(title || baseTitle, unidoc)
+
+    const { scripts, updateScripts } = page
+    if (updateScripts) {
+        const existingScripts = unidoc.body.getElementsByTagName('script')
+        clearExistingScripts(existingScripts)
+        insertScripts(scripts, unidoc.body, unidoc)
     }
-    if (!uniwindow.__UNISTACK__.initialRender) {
-        // console.log('About to update bodyScripts', bodyScripts)
-        const existingBodyScripts = unidoc.body.getElementsByTagName('script')
-        clearExistingScripts(existingBodyScripts)
-        insertScripts(bodyScripts, unidoc.body, unidoc)
+
+    const { styles, updateStyles } = page
+    if (!updateStyles) {
+        const existingStyles = unidoc.head.getElementsByTagName('link')
+        console.log('existingStyles', existingStyles)
     }
+
     return null
+}
+
+const setTitle = (newTitle, unidoc) => {
+    if (unidoc.title !== newTitle) unidoc.title = newTitle
 }
 
 const clearExistingScripts = (scripts) => {

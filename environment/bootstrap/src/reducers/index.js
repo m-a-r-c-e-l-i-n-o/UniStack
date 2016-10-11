@@ -1,8 +1,5 @@
 import { combineReducers } from 'redux'
-import { routerReducer } from 'react-router-redux'
-import appReducers from 'app/reducers/index.js'
+import graphql from './graphql.js'
+import page from './page.js'
 
-export default combineReducers({
-    ...appReducers,
-    routing: routerReducer
-})
+export default combineReducers({ page, graphql })

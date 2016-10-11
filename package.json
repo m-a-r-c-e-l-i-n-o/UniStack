@@ -1,6 +1,6 @@
 {
   "name": "unistack",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "UniStack is a modern javascript framework.",
   "main": "./dist/unistack.js",
   "scripts": {

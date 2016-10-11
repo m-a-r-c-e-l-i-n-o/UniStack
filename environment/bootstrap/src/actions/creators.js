@@ -1,12 +1,33 @@
 import {
-    __UNISTACK__SET_PAGE_TITLE,
-    __UNISTACK__SET_PAGE_BODY_SCRIPTS
-} from '../constants/actionTypes.js'
+    SET_PAGE_BASE_TITLE,
+    SET_PAGE_TITLE,
+    SET_PAGE_STYLES,
+    SET_PAGE_BODY_SCRIPTS,
+    SET_PAGE_BASE_BODY_SCRIPTS,
+    SET_GRAPH_QL_REQUEST,
+    SET_GRAPH_QL_PROMISE
+} from './types.js'
 
-export const setPageTitle = (payload) => (
-    { type: __UNISTACK__SET_PAGE_TITLE, payload }
+export const setPageBaseTitle = (payload) => (
+    { type: SET_PAGE_BASE_TITLE, payload }
 )
 
-export const setPageBodyScripts = (payload) => (
-    { type: __UNISTACK__SET_PAGE_BODY_SCRIPTS, payload }
+export const setPageTitle = (payload) => (
+    { type: SET_PAGE_TITLE, payload }
+)
+
+export const setPageStyles = (payload) => (
+    { type: SET_PAGE_STYLES, payload }
+)
+
+export const setPageScripts = (payload) => (
+    { type: SET_PAGE_BODY_SCRIPTS, payload }
+)
+
+export const setGraphQLPromise = (payload) => (
+    { type: SET_GRAPH_QL_PROMISE, payload }
+)
+
+export const setGraphQLRequest = (payload) => (
+    { type: SET_GRAPH_QL_REQUEST, payload }
 )

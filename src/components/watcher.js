@@ -17,7 +17,7 @@ const Watcher = ({ dispatch, getState }) => {
     const watching = getStateLeaf(state, 'WATCHING')
     debug('Checking if it is worth watching the files...')
     if (watch && !watching) {
-        const pattern = path.join(ENV_PATH, '{src,dist/css}', '**/*')
+        const pattern = path.join(ENV_PATH, '{src,dist/css,bootstrap/src}', '**/*')
         debug('!!!!--Preparing to watch files: %s', pattern)
         dispatch({ type: SET_WATCHER_PREPARATIONS })
         const gaze = new Gaze(pattern)
