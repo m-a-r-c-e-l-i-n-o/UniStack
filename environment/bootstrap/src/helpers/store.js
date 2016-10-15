@@ -44,9 +44,9 @@ export const createHelpers = () => {
         dispatch(setPageScripts(jsxCollectionToShallowObject(scripts)))
     }
 
-    const runRequest = (request, ctx) => {
+    const runRequest = (request) => {
         if (platform === 'node') {
-            return new Promise((resolve, reject) => resolve(tryAPI(ctx)))
+            return new Promise((resolve, reject) => resolve(tryAPI({ request })))
             .then(results => JSON.parse(results))
         }
         return fetch(request).then(results => results.json())
@@ -69,8 +69,7 @@ export const createHelpers = () => {
                 ({ query, variables })
             ))
         })
-        const ctx = { url: graphql, request }
-        return runRequest(request, ctx)
+        return runRequest(request)
         .then(results => {
             results.forEach((result, index) => {
                 if (result.error) return promises[index].reject(result)

@@ -84,39 +84,35 @@ export const resolveGraphQL = (requestBody, schema) => {
     return Promise.all(requests).then(result => JSON.stringify(result, null, 2))
 }
 
-const parseBody = ({ req, res, method }) => {
-    if (method.toLowerCase() !== 'post') return Promise.resolve()
-    return new Promise((resolve, reject) => (
+const parseBody = (req, res, method) => (
+    new Promise((resolve, reject) => (
         parsePost.config({ parser: JSON.parse })(resolve)(req, res)
     ))
-}
+)
 
-export const tryAPI = async (ctx) => {
-    const { renderProps: api } = await matchRoute(apiRoutes, ctx.url)
+export const tryAPI = async ({ req, res, request, response = {} }) => {
+    const { method, url } = request
+    const { renderProps: api } = await matchRoute(apiRoutes, url)
+
     if (api) {
-        await parseBody(ctx)
-        const { request, req } = ctx
-        request.body = req.body
-        const config = {
+        if (req && res && method.toLowerCase() === 'post') {
+            await parseBody(req, res, method)
+            request.body = req.body
+        }
+
+        const ctx = {
             request,
             params: api.params,
             pathname: api.pathname,
             search: api.location.search,
             query: api.location.query
         }
-        ctx.status = 200
-        const result = api.components[api.components.length-1](config)
-        if (!ctx.url.startsWith('/api/graphql')) return ctx.body = result
+        const result = api.components[api.components.length-1](ctx)
+        if (!url.startsWith('/api/graphql')) return response.body = result
 
-        const type = (
-            request.headers && typeof request.headers.get === 'function' ?
-            request.headers.get('content-type') :
-            null
-        )
-        if (typeof request.body === 'string') {
-            request.body = JSON.parse(request.body)
-        }
-        return ctx.body = await resolveGraphQL(request.body, result)
+        const { body } = request
+        const query = (typeof body === 'string' ? JSON.parse(body) : body)
+        return response.body = await resolveGraphQL(query, result)
     }
 }
 
