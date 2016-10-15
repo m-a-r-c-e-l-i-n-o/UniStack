@@ -49,20 +49,21 @@ export const resolveTitle = (baseTitle, title) => {
     return title
 }
 
-export const jsxToShallowObject = component => {
-    const { children, ...props } = component.props
-    const plain = { ...props, type: component.type }
-    if (typeof children === 'string') return { ...plain, children }
-    return plain
-}
-
-export const shallowObjectToJSX = (props, key) => {
+export const shallowObjectToJSX = (props) => {
     const { type: Type, ...ownProps } = props
-    return <Type {...{...unescapeReactHTML(ownProps), key }} />
+    return <Type {...{...unescapeReactHTML(ownProps) }} />
 }
 
 export const shallowObjectsToJSX = objects => {
     return [].concat(objects).map(object => shallowObjectToJSX(object))
+}
+
+export const jsxToShallowObject = component => {
+    const { props, key, type } = component
+    const { children, ...ownProps } = props
+    const plain = { ...ownProps, key, type }
+    if (typeof children === 'string') return { ...plain, children }
+    return plain
 }
 
 export const jsxCollectionToShallowObject = collection => {

@@ -13,6 +13,8 @@ import apiRoutes from 'app/node/api/routes.js'
 import reducers from './reducers/index.js'
 
 import {
+    jsxCollectionToShallowObject,
+    jsxToShallowObject,
     shallowObjectsToJSX,
     shallowObjectToJSX,
     createSharedStore,
@@ -31,21 +33,25 @@ const getUtility = (utility) => {
     }
 }
 
-const mergeBaseStyle = (styles = []) => ([
-    { href: '/bootstrap/src/browser/__unistack__/utilities.css' },
-    ...styles
-])
+const mergeBaseStyle = (styles = []) => {
+    if (!Array.isArray(styles)) styles = []
+    const result = jsxCollectionToShallowObject([
+        <link key="1" rel="stylesheet" href="/bootstrap/src/browser/__unistack__/utilities.css"/>,
+        ...styles
+    ])
+    return result
+}
 
 const renderUtilityList = () => ({
     entry: 'browser/__unistack__/utilities',
-    title: 'Unistack - Utilities'
+    title: jsxToShallowObject(<title>Unistack - Utilities</title>)
 })
 
 const renderGraphiQL = () => ({
     entry: 'browser/__unistack__/graphiql',
-    title: 'Unistack - Utilities - GraphiQL',
+    title: jsxToShallowObject(<title>Unistack - Utilities - GraphiQL</title>),
     styles: [
-        { href: '/bootstrap/jspm_packages/npm/graphiql@0.7.8/graphiql.css' }
+        <link key="2" rel="stylesheet" href="/bootstrap/jspm_packages/npm/graphiql@0.7.8/graphiql.css"/>
     ]
 })
 
@@ -79,7 +85,7 @@ const renderComponents = (componentProps) => {
     })
 }
 
-const renderPageHTML = (page) => {
+const renderPageHTML = (page, debug) => {
     const {
         entry = 'browser',
         title = '',
