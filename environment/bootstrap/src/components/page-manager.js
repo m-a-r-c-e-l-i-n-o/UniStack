@@ -1,6 +1,6 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import { platform } from '../unistats.js'
+import { platform } from '../uni.js'
 
 class PageManager extends React.Component {
     constructor(props) {

@@ -23,7 +23,7 @@ const Broadcaster = ({ dispatch, getState }) => {
     const state = getState()
     const broadcast = getStateLeaf(state, 'BROADCAST')
     const broadcasting = getStateLeaf(state, 'BROADCASTING')
-    debug('Checking if server needs to be initialized...')
+    // debug('Checking if server needs to be initialized...')
     if (broadcast && !broadcasting) {
         debug('!!!!--Preparing to initialize socket server...')
         dispatch({ type: SET_BROADCASTER_PREPARATIONS })
@@ -53,7 +53,7 @@ const Broadcaster = ({ dispatch, getState }) => {
     }
 
     const message = getStateLeaf(state, 'MESSAGE')
-    debug('Checking if a there is a message to share...')
+    // debug('Checking if a there is a message to share...')
     if (message) {
         debug('Yep, we sure do.')
         console.log(message)
@@ -64,7 +64,7 @@ const Broadcaster = ({ dispatch, getState }) => {
         return dispatch({ type: CLEAR_BROADCASTER_MESSAGE })
     }
 
-    debug('Checking if a browser reload is needed...')
+    // debug('Checking if a browser reload is needed...')
     const reload = getStateLeaf(state, 'RELOAD')
     if (reload) {
         debug('Yep, we sure do.')
@@ -76,7 +76,7 @@ const Broadcaster = ({ dispatch, getState }) => {
         return dispatch({ type: CLEAR_BROADCASTER_RELOAD })
     }
 
-    debug('Checking if there was a file change event...')
+    // debug('Checking if there was a file change event...')
     const fileChange = getStateLeaf(state, 'FILE_CHANGE')
     if (fileChange) {
         debug('Yep, there was file change: %s %s', fileChange.name, fileChange.type)
@@ -89,7 +89,7 @@ const Broadcaster = ({ dispatch, getState }) => {
         })
         return dispatch({ type: CLEAR_BROADCASTER_FILE_CHANGE })
     }
-    debug('Nothing to do.')
+    // debug('Nothing to do.')
 }
 
 const getStateLeaf = (state, leaf) => {

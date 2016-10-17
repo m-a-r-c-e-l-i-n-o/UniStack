@@ -52,7 +52,7 @@ SystemJS.config({
     "app": {
       "format": "esm",
       "map": {
-        "unistats": "bootstrap/src/unistats.js"
+        "uni": "bootstrap/src/uni.js"
       },
       "meta": {
         "*.js": {
@@ -68,7 +68,7 @@ SystemJS.config({
     "bootstrap": {
       "format": "esm",
       "map": {
-        "unistats": "bootstrap/src/unistats.js"
+        "uni": "bootstrap/src/uni.js"
       },
       "meta": {
         "*.js": {

@@ -2,6 +2,7 @@ import { SET_CLICKS, SET_CLICK_LOADING } from './types.js'
 
 export const getClickCount = (request) => {
     return (dispatch) => {
+        dispatch({ type: SET_CLICK_LOADING })
         return request('{ clicks { count } }').then(({ data, errors }) => {
             if (errors) return console.error(errors)
             const { clicks: { count } } = data

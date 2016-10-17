@@ -50,7 +50,7 @@ const Bundler = (_ref) => {
     const update = getStateLeaf(state, 'UPDATE');
     if (!update) return;
 
-    debug('Checking if local state needs to be initialized...');
+    // debug('Checking if local state needs to be initialized...')
     if (!localState.get('initialized')) {
         debug('Attempting to initialize the local state...');
         try {
@@ -63,7 +63,7 @@ const Bundler = (_ref) => {
         }
     }
 
-    debug('Checking if there is a newly modified file...');
+    // debug('Checking if there is a newly modified file...')
     const initial = getStateLeaf(state, 'INITIAL');
     const invalidFile = getStateLeaf(state, 'INVALID_FILE');
     const modifiedFile = getStateLeaf(state, 'MODIFIED_FILE');
@@ -74,13 +74,13 @@ const Bundler = (_ref) => {
 
     const updating = getStateLeaf(state, 'UPDATING');
     const pendingRequest = getStateLeaf(state, 'PENDING_REQUEST');
-    debug('Checking if there is a bundle request pending...');
+    // debug('Checking if there is a bundle request pending...')
     if (!updating && pendingRequest) {
         debug('There is a pending bundler.');
         return dispatch({ type: _actionTypes.CLEAR_BUNDLER_PENDING_REQUEST });
     }
 
-    debug('Checking if bundler is worth is updating...');
+    // debug('Checking if bundler is worth is updating...')
     const filesInvalidated = getStateLeaf(state, 'FILES_INVALIDATED');
     if (filesInvalidated && !updating && !invalidFile) {
         debug('!!!!--Preparing to run bundlers.');
@@ -109,7 +109,7 @@ const Bundler = (_ref) => {
             return dispatch(makeUnknownBundleError(error, initial));
         });
     }
-    debug('Nothing to do.');
+    // debug('Nothing to do.')
 };
 
 const getStateLeaf = (state, leaf) => {
@@ -146,7 +146,10 @@ const runBundler = () => {
 
     const nodeBuildOptions = _lodash2.default.extend({}, {
         node: true,
-        conditions: { 'unistack/unistats|platform': 'node' }
+        conditions: {
+            'unistack/uni|platform': 'node',
+            'unistack/uni|environment': 'development'
+        }
     }, buildOptions);
 
     const nodeInstance = localState.get(nodeBundler);

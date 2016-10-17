@@ -74,14 +74,19 @@ const renderComponentHTML = (store, componentProps) => (
 const renderComponents = (componentProps) => {
     const store = createSharedStore()
     const syncComponentHTML = renderComponentHTML(store, componentProps)
+    store.unihelpers.initial(false)
     return store.unihelpers.request().then(requests => {
-        const page = store.unihelpers.page()
-        const componentHTML = (
-            requests ?
-            renderComponentHTML(store, componentProps) :
-            syncComponentHTML
-        )
-        return { ...page, state: store.getState(), componentHTML }
+        return new Promise(resolve => {
+            setTimeout(() => { // ensure other "then" operations take precedence
+                const page = store.unihelpers.page()
+                const componentHTML = (
+                    requests ?
+                    renderComponentHTML(store, componentProps) :
+                    syncComponentHTML
+                )
+                resolve({ ...page, state: store.getState(), componentHTML })
+            }, 0)
+        })
     })
 }
 

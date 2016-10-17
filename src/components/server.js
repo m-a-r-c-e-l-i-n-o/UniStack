@@ -23,7 +23,7 @@ const Server = ({ dispatch, getState }) => {
     const serve = getStateLeaf(state, 'SERVE')
     const restart = getStateLeaf(state, 'RESTART')
     const worthRestartingNow = getStateLeaf(state, 'WORTH_RESTARTING_NOW')
-    debug('Checking if it is worth restarting the server...')
+    // debug('Checking if it is worth restarting the server...')
     if (restart && worthRestartingNow) {
         debug('!!!!--Preparing to restart the server.')
         dispatch({ type: SET_SERVER_RESTART_PREPARATION })
@@ -34,7 +34,7 @@ const Server = ({ dispatch, getState }) => {
             return dispatch(makeUnknownServerError(error))
         })
     }
-    debug('Nothing to do.')
+    // debug('Nothing to do.')
 }
 
 const getStateLeaf = (state, leaf) => {
@@ -57,7 +57,6 @@ const loadServer = () => {
     debug('!!!!--Requiring node bundle...')
     delete require.cache[ENV_NODE_DEV_BUNDLE_FILE]
     const result = require(ENV_NODE_DEV_BUNDLE_FILE).serve
-    console.log('result', result)
     debug('@@@@--Node bundle successfully required.')
     return result
 }

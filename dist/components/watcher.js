@@ -35,7 +35,7 @@ const Watcher = (_ref) => {
     const state = getState();
     const watch = getStateLeaf(state, 'WATCH');
     const watching = getStateLeaf(state, 'WATCHING');
-    debug('Checking if it is worth watching the files...');
+    // debug('Checking if it is worth watching the files...')
     if (watch && !watching) {
         const pattern = _path2.default.join(_paths.ENV_PATH, '{src,dist/css,bootstrap/src}', '**/*');
         debug('!!!!--Preparing to watch files: %s', pattern);
@@ -55,7 +55,7 @@ const Watcher = (_ref) => {
             return dispatch((0, _creators.handleError)(error));
         });
     }
-    debug('Nothing to do.');
+    // debug('Nothing to do.')
 };
 
 const getStateLeaf = (state, leaf) => {

@@ -1,20 +1,30 @@
 import React from 'react'
-import Button from '../presentational/button.js'
 import Text from '../presentational/text.js'
-import { platform } from 'unistack/unistats.js'
+import { platform } from 'unistack/unihelpers.js'
+import { ENABLE_BUTTON, SET_CLICK_LOADING } from '../../actions/types.js'
 import { getClickCount, setClickCount } from '../../actions/creators.js'
 
 const PageInfo = ({ state, dispatch, unihelpers }) => {
-    const { request, title } = unihelpers
-    const { button: { clicks, updating }} = state
+    const { request, title, initial } = unihelpers
+    const { button: { clicks, loading }} = state
     const { children: value } = title()
     const onClick = () => dispatch(setClickCount(request))
-    if (platform === 'node') dispatch(getClickCount(request))
+
+    if (initial()) {
+        if (platform === 'browser' && loading) {
+            dispatch({ type: ENABLE_BUTTON })
+        } else if (platform === 'node') {
+            dispatch(getClickCount(request)).then(() => (
+                dispatch({ type: SET_CLICK_LOADING })
+            ))
+        }
+    }
+
     return (
         <div>
             <Text value={value}/>
             {' This button '}
-            <Button onClick={onClick} disabled={updating}>Test GraphQL Run</Button>
+            <button onClick={onClick} disabled={loading}>Test GraphQL Run</button>
             {` has been clicked ${clicks} time(s) since this server was put online.`}
         </div>
     )

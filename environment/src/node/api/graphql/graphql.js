@@ -1,4 +1,4 @@
-import { platform } from 'unistack/unistats.js'
+import { platform } from 'unistack/unihelpers.js'
 import {
     graphql,
     GraphQLSchema,
@@ -6,7 +6,7 @@ import {
     GraphQLString
 } from 'graphql'
 
-let clickCountStore = 1
+let clickCountStore = 0
 const Clicks = new GraphQLObjectType({
     name: 'Clicks',
     fields: {

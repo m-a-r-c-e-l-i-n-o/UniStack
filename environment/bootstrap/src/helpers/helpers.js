@@ -1,13 +1,15 @@
 import React from 'react'
 import { graphql } from 'graphql'
-import uniwindow from '../#{unistats|platform}/uniwindow.js'
+import uniwindow from '../#{uni|platform}/uniwindow.js'
 import { match } from 'react-router'
-import { platform, environment } from '../unistats.js'
+import environment from '../env/#{uni|environment}.js'
+import { platform } from '../uni.js'
 import Page from '../components/page.js'
 import apiRoutes from 'app/node/api/routes.js'
 import parsePost from 'parse-post'
 
-export const initialRender = () => (uniwindow.__UNISTACK__.initialRender)
+export { platform, environment }
+
 export const createPage = (component) => Page(component)
 export const createWrapper = (component) => Page(component, { wrapper: true })
 
@@ -23,7 +25,7 @@ export const resolveContainer = (componentHTML) => (
 
 export const resolveScripts = (scripts, config) => {
     const { entry, ...state } = config
-    if (environment === 'production') return scripts
+    if (environment === 'production') return scripts.map(shallowObjectsToJSX)
     const inline = `
         window.__UNISTACK__ = ${JSON.stringify(state)};
         System.trace = true;
@@ -116,4 +118,3 @@ export const tryAPI = async ({ req, res, request, response = {} }) => {
         return response.body = await resolveGraphQL(query, result)
     }
 }
-

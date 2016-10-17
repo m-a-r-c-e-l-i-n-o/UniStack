@@ -36,7 +36,6 @@ So without further ado, here's what UniStack offers out of the box:
 ##### PENDING:
 - CSS preprocessing with support for Gulp plugins.
 - Package installations. (Alternative: `npm run jspm -- install "PACKAGE_NAME"`)
-- Production bundle presets. (Alternative: `npm run jspm -- build --production --minify {{--OTHER_OPTIONS}}`)
 
 ## Application Framework:
 Includes and configures:
@@ -107,7 +106,7 @@ _How?_ UniStack makes these utilities available at "http://{{domain}}:{{port}}/\
 Please see the [GraphiQL github page](https://github.com/graphql/graphiql), not to be confused with [GraphQL](https://github.com/graphql/graphql-js) or [GraphQL itself](http://graphql.org/).
 
 ##### PENDING:
-TBD.
+Production Bundler
 
 ## Quickstart (Beta)
 ##### 1) Install UniStack:
@@ -129,5 +128,15 @@ The redux and react dev tools are available by default, feel free to install tho
 ##### 4) Modify files
 JS hot reloading is avaliable to any files in the "src" directory. Perhaps the "routes.js" file might be a good place to start.
 CSS hot reloading is avaliable to any files in the "dist/css" folder.
-##### 5) Have fun :]
+##### 5) Create Production Bundles
+Node:
+```bash
+npm run jspm -- build ./bootstrap/src/node.js ./dist/js/node.bundle.js --production --node --conditions "{'unistack/uni|platform': 'node', 'unistack/uni|environment': 'production'}"
+```
+Browser:
+```bash
+npm run jspm -- build ./bootstrap/src/browser.js ./dist/js/browser.bundle.js --production --minify --conditions "{'unistack/uni|platform': 'browser', 'unistack/uni|environment': 'production'}"
+```
+<sub>*For multiple bundles, use systemjs builder's [bundle arithmetic.](https://github.com/systemjs/builder#bundle-arithmetic)*</sub>
+##### 6) Have fun :]
 

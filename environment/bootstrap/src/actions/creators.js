@@ -5,7 +5,8 @@ import {
     SET_PAGE_BODY_SCRIPTS,
     SET_PAGE_BASE_BODY_SCRIPTS,
     SET_GRAPH_QL_REQUEST,
-    SET_GRAPH_QL_PROMISE
+    SET_GRAPH_QL_PROMISE,
+    SET_PAGE_INITIAL_RENDER
 } from './types.js'
 
 export const setPageBaseTitle = (payload) => (
@@ -30,4 +31,8 @@ export const setGraphQLPromise = (payload) => (
 
 export const setGraphQLRequest = (payload) => (
     { type: SET_GRAPH_QL_REQUEST, payload }
+)
+
+export const setPageInitialRender = (payload) => (
+    { type: SET_PAGE_INITIAL_RENDER, payload }
 )

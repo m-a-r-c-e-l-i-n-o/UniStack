@@ -2,7 +2,8 @@ import {
     SET_PAGE_BASE_TITLE,
     SET_PAGE_TITLE,
     SET_PAGE_STYLES,
-    SET_PAGE_BODY_SCRIPTS
+    SET_PAGE_BODY_SCRIPTS,
+    SET_PAGE_INITIAL_RENDER
 } from '../actions/types.js'
 import { resolveTitle } from '../helpers/helpers.js'
 
@@ -12,16 +13,16 @@ const initialState = {
     styles: [],
     updateStyles: false,
     scripts: [],
-    updateScripts: false
+    updateScripts: false,
+    initial: true
 }
 
 const page = (page = initialState, { type, payload }) => {
     switch (type) {
+        case SET_PAGE_INITIAL_RENDER:
+            return { ...page, initial: payload }
         case SET_PAGE_BASE_TITLE:
-            return {
-                ...page,
-                baseTitle: payload
-            }
+            return { ...page, baseTitle: payload }
         case SET_PAGE_TITLE:
             return {
                 ...page,

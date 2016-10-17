@@ -1,11 +1,10 @@
 import React from 'react'
-import { platform } from '../unistats.js'
-import uniwindow from '../#{unistats|platform}/uniwindow.js'
-import { initialRender } from '../helpers/helpers.js'
+import { platform } from '../uni.js'
+import uniwindow from '../#{uni|platform}/uniwindow.js'
 
 const DomRebel = ({ dispatch, getState }) => {
     if (platform === 'node') return null
-    if (initialRender()) return null
+    if (uniwindow.__UNISTACK__.initialRender) return null
 
     const page = getState().page
     const unidoc = uniwindow.document
@@ -25,7 +24,7 @@ const DomRebel = ({ dispatch, getState }) => {
     const { styles, updateStyles } = page
     if (!updateStyles) {
         const existingStyles = unidoc.head.getElementsByTagName('link')
-        console.log('existingStyles', existingStyles)
+        // console.log('existingStyles', existingStyles)
     }
 
     return null

@@ -2,7 +2,7 @@ import 'isomorphic-fetch'
 import thunk from 'redux-thunk'
 import { routerReducer } from 'react-router-redux'
 import appReducers from 'app/reducers/index.js'
-import { platform } from '../unistats.js'
+import { platform } from '../uni.js'
 import reducers from '../reducers/index.js'
 import DomRebel from '../components/dom-rebel.js'
 import {
@@ -16,7 +16,8 @@ import {
     setPageTitle,
     setPageScripts,
     setGraphQLRequest,
-    setGraphQLPromise
+    setGraphQLPromise,
+    setPageInitialRender
 } from '../actions/creators.js'
 import { CLEAR_GRAPHQL_STATE } from '../actions/types.js'
 
@@ -25,6 +26,15 @@ export const createHelpers = () => {
     const { dispatch, getState } = store
 
     const page = () => getState().page
+
+    const initial = (...args) => {
+        if (platform === 'browser') {
+            return window.__UNISTACK__.initialRender
+        }
+        if (args.length === 0) return getState().page.initial
+        const [ value ] = args
+        dispatch(setPageInitialRender(value))
+    }
 
     const baseTitle = (...args) => {
         if (args.length === 0) return getState().page.baseTitle
@@ -96,7 +106,7 @@ export const createHelpers = () => {
     const components = [DomRebel]
     components.forEach(component => store.subscribe(() => component(store)))
 
-    return Object.freeze({ page, baseTitle, title, scripts, request })
+    return Object.freeze({ page, baseTitle, title, scripts, request, initial })
 }
 
 export const createSharedStore = (...args) => {
