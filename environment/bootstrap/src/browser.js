@@ -23,5 +23,10 @@ ReactDOM.render(
 )
 
 // Hot Reloader
-export function __reload() {}
-export function __unload() { ReactDOM.unmountComponentAtNode(container) }
+export function __reload() { window.__UNISTACK__.initialRender = false }
+export function __unload() {
+    window.__UNISTACK__.initialRender = true
+    window.__UNISTACK__.state = store.getState()
+    ReactDOM.unmountComponentAtNode(container)
+}
+

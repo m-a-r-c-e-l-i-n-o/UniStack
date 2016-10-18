@@ -1,19 +1,33 @@
-import HotReloader from 'systemjs-hot-reloader/hot-reloader.js'
+/* eslint-env browser */
+import 'systemjs-hmr'
+import socketIO from 'socket.io-client'
+import debug from 'debug'
+const d = debug('unistack:hot-reloader')
 
-const hotReloader = new HotReloader( '//localhost:5776')
-hotReloader.socket.on( 'connect', () => {
-    console.log( 'Socket connected!' )
+const backendURL = '//localhost:5776'
+const io = socketIO(backendURL)
+
+io.on('connect', () => {
+    d('hot reload connected to watcher on ', backendURL)
 })
 
-let name
-hotReloader.on('change', _name => {
-    console.log('Changed!')
-    return name = _name
+io.on('reload', () => {
+    d('whole page reload requested')
+    document.location.reload(true)
 })
 
-hotReloader.on( 'moduleRecordNotFound', _ => {
-    console.log('Module not found', name)
-    if (name.endsWith('.css')) {
+io.on('change', (event) => {
+    const moduleName = event.path
+    d('attempting to reload ', moduleName)
+    System.reload(moduleName).catch((err) => moduleNotFound(moduleName))
+})
+
+io.on('disconnect', () => {
+    d('hot reload disconnected from ', backendURL)
+})
+
+const moduleNotFound = (moduleName) => {
+    if (moduleName.endsWith('.css')) {
         const newLink = document.createElement('link')
         newLink.type = 'text/css'
         newLink.rel = 'stylesheet'
@@ -27,12 +41,12 @@ hotReloader.on( 'moduleRecordNotFound', _ => {
             if (oldHref.indexOf('#') !== -1) {
                 oldHref = oldHref.substr(0, oldHref.indexOf('#'))
             }
-            if (oldHref.endsWith(name)) {
+            if (oldHref.endsWith(moduleName)) {
                 const newHash = Math.round(Math.random() * 1e10)
-                const baseUrl = oldHref.substr(0, oldHref.indexOf(name))
-                newLink.href = `${baseUrl}${name}#${newHash}`
+                const baseUrl = oldHref.substr(0, oldHref.indexOf(moduleName))
+                newLink.href = `${baseUrl}${moduleName}#${newHash}`
                 link.parentNode.replaceChild(newLink, link)
             }
         })
     }
-})
+}

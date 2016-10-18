@@ -27,7 +27,8 @@ import {
     CLEAR_NEWLY_MODIFIED_FILE_FLAG,
     SET_BUNDLER_NODE_ONLY_FILE_MODIFIED,
     CLEAR_BUNDLER_INVALID_FILE,
-    CLEAR_BUNDLER_PENDING_REQUEST
+    CLEAR_BUNDLER_PENDING_REQUEST,
+    SET_BUNDLER_ERROR_PREPARATIONS
 } from '../constants/actionTypes.js'
 import {
     handleError,
@@ -96,16 +97,16 @@ const Bundler = ({ dispatch, getState }) => {
         })
         .catch(error => {
             debug('@@@@--Running bundler failed.')
-            debug('Checking if it is an invalid file error...')
-            const invalidFile = getInvalidFile(error)
-            if (invalidFile) {
-                debug('It appears that it is.')
-                dispatch(setBundlerInvalidFile(invalidFile))
-                return dispatch(makeInvalidFileError(error, invalidFile, initial))
-            }
-            debug('It appears that it is not.')
-            debug('Issuing an unknown error.')
-            dispatch({ type: CLEAR_BUNDLER_UPDATE_PREPARATIONS })
+            // debug('Checking if it is an invalid file error...')
+            // const invalidFile = getInvalidFile(error)
+            // if (invalidFile) {
+            //     debug('It appears that it is.')
+            //     dispatch(setBundlerInvalidFile(invalidFile))
+            //     return dispatch(makeInvalidFileError(error, invalidFile, initial))
+            // }
+            // debug('It appears that it is not.')
+            debug('Issuing an unknown bundler error.')
+            dispatch({ type: SET_BUNDLER_ERROR_PREPARATIONS })
             return dispatch(makeUnknownBundleError(error, initial))
         })
     }
@@ -136,20 +137,20 @@ const runBundler = () => {
         production: false,
         minify: false,
         mangle: false,
-        sourceMaps: true,
+        sourceMaps: false,
         lowResSourceMaps: false
     }
 
+    const browserEntry = ENV_BROWSER_ENTRY_FILE
     const browserInstance = localState.get(browserBundler)
     const browserBuildOptions = _.extend({}, buildOptions)
-    const browserBundlePromise = browserInstance.bundle(
-        ENV_BROWSER_ENTRY_FILE,
-        ENV_BROWSER_BUNDLE_FILE,
-        browserBuildOptions
+    const browserBundlePromise = browserInstance.trace(
+        `${browserEntry} - (${browserEntry} - [${browserEntry}])`
     )
 
     const nodeBuildOptions = _.extend({}, {
         node: true,
+        sourceMaps: true,
         conditions: {
             'unistack/uni|platform': 'node',
             'unistack/uni|environment': 'development'
@@ -192,12 +193,12 @@ const handleModifiedFile = (filename, invalidFile) => {
     debug('Invalidated in browser bundler: %s', browserFile)
     const nodeFile = invalidateFile(filename, nodeInstance)
     debug('Invalidated in node bundler: %s', nodeFile)
-    debug('Checking if modified file is invalid: %s', invalidFile)
-    if (invalidFile === filename) {
-        debug('Yep file is invalid')
-        return { type: CLEAR_BUNDLER_INVALID_FILE }
-    }
-    debug('It appears that it is not.')
+    // debug('Checking if modified file is invalid: %s', invalidFile)
+    // if (invalidFile === filename) {
+    //     debug('Yep file is invalid')
+    //     return { type: CLEAR_BUNDLER_INVALID_FILE }
+    // }
+    // debug('It appears that it is not.')
     debug('Checking if modified file is node only.')
     if (nodeFile && !browserFile) {
         debug('Yep file is node only.')

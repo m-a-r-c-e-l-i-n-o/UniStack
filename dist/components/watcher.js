@@ -12,9 +12,9 @@ var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
 
-var _gaze = require('gaze');
+var _chokidar = require('chokidar');
 
-var _gaze2 = _interopRequireDefault(_gaze);
+var _chokidar2 = _interopRequireDefault(_chokidar);
 
 var _formattedFile = require('../helpers/formatted-file.js');
 
@@ -37,20 +37,20 @@ const Watcher = (_ref) => {
     const watching = getStateLeaf(state, 'WATCHING');
     // debug('Checking if it is worth watching the files...')
     if (watch && !watching) {
-        const pattern = _path2.default.join(_paths.ENV_PATH, '{src,dist/css,bootstrap/src}', '**/*');
-        debug('!!!!--Preparing to watch files: %s', pattern);
+        const files = [_path2.default.join('src', '**/*'), _path2.default.join('dist', 'css'), _path2.default.join('bootstrap', 'src')];
+        debug('!!!!--Preparing to watch files!!!!!!!!!!1: %s', files);
         dispatch({ type: _actionTypes.SET_WATCHER_PREPARATIONS });
-        const gaze = new _gaze2.default(pattern);
-        gaze.on('all', (event, filepath) => {
-            const formattedFile = (0, _formattedFile.modifiedFile)(filepath, event);
-            debug('Emitting file change: %s - %s', event, filepath);
-            return dispatch((0, _creators.setWatcherModifiedFile)(formattedFile));
-        });
-        gaze.on('ready', () => {
+        const watcherSettings = { cwd: _paths.ENV_PATH, ignoreInitial: true };
+        const watcher = _chokidar2.default.watch(files, watcherSettings);
+
+        watcher.on('add', filepath => dispatch(handleFileMofidication('add', filepath)));
+        watcher.on('change', filepath => dispatch(handleFileMofidication('change', filepath)));
+        watcher.on('unlink', filepath => dispatch(handleFileMofidication('unlink', filepath)));
+        watcher.on('ready', () => {
             debug('@@@@--Successfully watching files...');
             return dispatch({ type: _actionTypes.CLEAR_WATCHER_PREPARATIONS });
         });
-        gaze.on('error', error => {
+        watcher.on('error', error => {
             debug('@@@@--Failed to watch files, %s', error.stack);
             return dispatch((0, _creators.handleError)(error));
         });
@@ -65,6 +65,13 @@ const getStateLeaf = (state, leaf) => {
         case 'WATCHING':
             return state.watcher.watching;
     }
+};
+
+const handleFileMofidication = (event, filepath) => {
+    const absoluteFilepath = _path2.default.join(_paths.ENV_PATH, filepath);
+    debug('Emitting file change: %s - %s', event, absoluteFilepath);
+    const formattedFile = (0, _formattedFile.modifiedFile)(absoluteFilepath, event);
+    return (0, _creators.setWatcherModifiedFile)(formattedFile);
 };
 
 exports.default = Watcher;

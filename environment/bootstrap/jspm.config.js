@@ -13,7 +13,8 @@ SystemJS.config({
     "map": {
       "plugin-babel": "npm:systemjs-plugin-babel@0.0.14",
       "babel-plugin-transform-react-jsx": "npm:babel-plugin-transform-react-jsx@6.8.0",
-      "core-js": "npm:core-js@2.4.1"
+      "core-js": "npm:core-js@2.4.1",
+      "systemjs-hmr": "npm:systemjs-hmr@0.0.4"
     },
     "packages": {
       "npm:babel-plugin-transform-react-jsx@6.8.0": {
@@ -98,6 +99,7 @@ SystemJS.config({
     "codemirror": "npm:codemirror@5.19.0",
     "constants": "github:jspm/nodelibs-constants@0.2.0-alpha",
     "crypto": "github:jspm/nodelibs-crypto@0.2.0-alpha",
+    "debug": "npm:debug@2.2.0",
     "dgram": "github:jspm/nodelibs-dgram@0.2.0-alpha",
     "dns": "github:jspm/nodelibs-dns@0.2.0-alpha",
     "domain": "github:jspm/nodelibs-domain@0.2.0-alpha",
@@ -130,11 +132,11 @@ SystemJS.config({
     "readline": "github:jspm/nodelibs-readline@0.2.0-alpha",
     "redux": "npm:redux@3.6.0",
     "redux-thunk": "npm:redux-thunk@2.1.0",
+    "socket.io-client": "github:socketio/socket.io-client@1.5.0",
     "source-map": "npm:source-map@0.2.0",
     "source-map-support": "npm:source-map-support@0.4.2",
     "stream": "github:jspm/nodelibs-stream@0.2.0-alpha",
     "string_decoder": "github:jspm/nodelibs-string_decoder@0.2.0-alpha",
-    "systemjs-hot-reloader": "github:capaj/systemjs-hot-reloader@0.6.0",
     "tls": "github:jspm/nodelibs-tls@0.2.0-alpha",
     "tty": "github:jspm/nodelibs-tty@0.2.0-alpha",
     "tweetnacl": "npm:tweetnacl@0.13.3",
@@ -596,13 +598,6 @@ SystemJS.config({
         "inherits": "npm:inherits@2.0.3",
         "xtend": "npm:xtend@4.0.1",
         "readable-stream": "npm:readable-stream@2.1.5"
-      }
-    },
-    "github:capaj/systemjs-hot-reloader@0.6.0": {
-      "map": {
-        "debug": "npm:debug@2.2.0",
-        "weakee": "npm:weakee@1.0.0",
-        "socket.io-client": "github:socketio/socket.io-client@1.4.8"
       }
     },
     "npm:graphiql@0.7.8": {

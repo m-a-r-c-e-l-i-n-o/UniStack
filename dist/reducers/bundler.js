@@ -60,6 +60,7 @@ const bundler = function () {
             return _extends({}, bundler, {
                 updating: true
             });
+        case _actionTypes.SET_BUNDLER_ERROR_PREPARATIONS:
         case _actionTypes.CLEAR_BUNDLER_INITIAL_UPDATE_PREPARATIONS:
         case _actionTypes.CLEAR_BUNDLER_UPDATE_PREPARATIONS:
             return _extends({}, bundler, {

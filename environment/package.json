@@ -19,6 +19,7 @@
       "jspm": "bootstrap/jspm.config.js"
     },
     "dependencies": {
+      "debug": "npm:debug@^2.2.0",
       "graceful-fs": "npm:graceful-fs@^4.1.6",
       "graphiql": "npm:graphiql@^0.7.8",
       "isomorphic-fetch": "npm:isomorphic-fetch@^2.2.1",
@@ -29,13 +30,14 @@
       "react-router": "npm:react-router@^2.7.0",
       "react-router-redux": "npm:react-router-redux@^4.0.5",
       "redux-thunk": "npm:redux-thunk@^2.1.0",
-      "source-map-support": "npm:source-map-support@^0.4.2",
-      "systemjs-hot-reloader": "github:capaj/systemjs-hot-reloader@^0.6.0"
+      "socket.io-client": "github:socketio/socket.io-client@^1.5.0",
+      "source-map-support": "npm:source-map-support@^0.4.2"
     },
     "devDependencies": {
       "babel-plugin-transform-react-jsx": "npm:babel-plugin-transform-react-jsx@^6.8.0",
       "core-js": "npm:core-js@^2.4.1",
-      "plugin-babel": "npm:systemjs-plugin-babel@^0.0.14"
+      "plugin-babel": "npm:systemjs-plugin-babel@^0.0.14",
+      "systemjs-hmr": "npm:systemjs-hmr@^0.0.4"
     },
     "peerDependencies": {
       "assert": "github:jspm/nodelibs-assert@^0.2.0-alpha",
@@ -79,6 +81,9 @@
       "zlib": "github:jspm/nodelibs-zlib@^0.2.0-alpha"
     },
     "overrides": {
+      "github:socketio/socket.io-client@1.5.0": {
+        "main": "socket.io.js"
+      },
       "npm:browserify-zlib@0.1.4": {
         "dependencies": {
           "readable-stream": "^2.0.2",

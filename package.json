@@ -1,7 +1,7 @@
 {
   "name": "unistack",
-  "version": "0.0.6",
-  "description": "UniStack is a modern javascript framework.",
+  "version": "0.0.7",
+  "description": "UniStack is a modern javascript dev environment, utilities, and framework.",
   "main": "./dist/unistack.js",
   "scripts": {
     "test": "npm run build && node ./test.js --quick",
@@ -42,11 +42,11 @@
   },
   "dependencies": {
     "argv": "0.0.2",
+    "chokidar": "^1.6.1",
     "coveralls": "^2.11.11",
     "debug": "^2.2.0",
     "file-exists": "^2.0.0",
     "fs-extra": "^0.30.0",
-    "gaze": "^1.1.0",
     "gotta-catch-em-all": "0.0.3",
     "gulp": "github:gulpjs/gulp#4.0",
     "inquirer": "^1.1.2",

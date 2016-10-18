@@ -8,7 +8,8 @@ import {
     SET_BUNDLER_NODE_ONLY_FILE_MODIFIED,
     SET_BUNDLER_INVALID_FILE,
     CLEAR_BUNDLER_INVALID_FILE,
-    CLEAR_BUNDLER_PENDING_REQUEST
+    CLEAR_BUNDLER_PENDING_REQUEST,
+    SET_BUNDLER_ERROR_PREPARATIONS
 } from '../constants/actionTypes.js'
 
 const initialState = {
@@ -65,6 +66,7 @@ const bundler = (bundler = initialState, { type, payload }) => {
                 ...bundler,
                 updating: true
             }
+        case SET_BUNDLER_ERROR_PREPARATIONS:
         case CLEAR_BUNDLER_INITIAL_UPDATE_PREPARATIONS:
         case CLEAR_BUNDLER_UPDATE_PREPARATIONS:
             return  {

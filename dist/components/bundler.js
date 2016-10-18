@@ -96,16 +96,16 @@ const Bundler = (_ref) => {
             return dispatch({ type: _actionTypes.CLEAR_BUNDLER_UPDATE_PREPARATIONS });
         }).catch(error => {
             debug('@@@@--Running bundler failed.');
-            debug('Checking if it is an invalid file error...');
-            const invalidFile = getInvalidFile(error);
-            if (invalidFile) {
-                debug('It appears that it is.');
-                dispatch((0, _creators.setBundlerInvalidFile)(invalidFile));
-                return dispatch(makeInvalidFileError(error, invalidFile, initial));
-            }
-            debug('It appears that it is not.');
-            debug('Issuing an unknown error.');
-            dispatch({ type: _actionTypes.CLEAR_BUNDLER_UPDATE_PREPARATIONS });
+            // debug('Checking if it is an invalid file error...')
+            // const invalidFile = getInvalidFile(error)
+            // if (invalidFile) {
+            //     debug('It appears that it is.')
+            //     dispatch(setBundlerInvalidFile(invalidFile))
+            //     return dispatch(makeInvalidFileError(error, invalidFile, initial))
+            // }
+            // debug('It appears that it is not.')
+            debug('Issuing an unknown bundler error.');
+            dispatch({ type: _actionTypes.SET_BUNDLER_ERROR_PREPARATIONS });
             return dispatch(makeUnknownBundleError(error, initial));
         });
     }
@@ -136,16 +136,18 @@ const runBundler = () => {
         production: false,
         minify: false,
         mangle: false,
-        sourceMaps: true,
+        sourceMaps: false,
         lowResSourceMaps: false
     };
 
+    const browserEntry = _files.ENV_BROWSER_ENTRY_FILE;
     const browserInstance = localState.get(browserBundler);
     const browserBuildOptions = _lodash2.default.extend({}, buildOptions);
-    const browserBundlePromise = browserInstance.bundle(_files.ENV_BROWSER_ENTRY_FILE, _files.ENV_BROWSER_BUNDLE_FILE, browserBuildOptions);
+    const browserBundlePromise = browserInstance.trace(`${ browserEntry } - (${ browserEntry } - [${ browserEntry }])`);
 
     const nodeBuildOptions = _lodash2.default.extend({}, {
         node: true,
+        sourceMaps: true,
         conditions: {
             'unistack/uni|platform': 'node',
             'unistack/uni|environment': 'development'
@@ -184,12 +186,12 @@ const handleModifiedFile = (filename, invalidFile) => {
     debug('Invalidated in browser bundler: %s', browserFile);
     const nodeFile = invalidateFile(filename, nodeInstance);
     debug('Invalidated in node bundler: %s', nodeFile);
-    debug('Checking if modified file is invalid: %s', invalidFile);
-    if (invalidFile === filename) {
-        debug('Yep file is invalid');
-        return { type: _actionTypes.CLEAR_BUNDLER_INVALID_FILE };
-    }
-    debug('It appears that it is not.');
+    // debug('Checking if modified file is invalid: %s', invalidFile)
+    // if (invalidFile === filename) {
+    //     debug('Yep file is invalid')
+    //     return { type: CLEAR_BUNDLER_INVALID_FILE }
+    // }
+    // debug('It appears that it is not.')
     debug('Checking if modified file is node only.');
     if (nodeFile && !browserFile) {
         debug('Yep file is node only.');
