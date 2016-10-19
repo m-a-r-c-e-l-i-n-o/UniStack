@@ -121,10 +121,11 @@ DEBUG=unistack:* unistack
 ##### 3) Wait for instructions
 On the terminal you should see "`@@@@@@@@@@@@: Open browser to: http://localhost:8080`" at some point.
 That's the indication that the server is ready and you may open the browser.
-Once the browser is open, you should see the HTML rendered right away, but open the console
-and wait for a "`Local components are now synced with server rendered components.`" and a "`Socket connected!`"
-message to appear before manipulating files.
-The redux and react dev tools are available by default, feel free to install those extensions.
+Once the browser is open, you should see the HTML rendered right away, but open the dev tools and ensure
+that the debugger is on by running the following command `localStorage.debug = 'unistack:*'` in the console.
+You will also need to wait for a "`Local components are now synced with server rendered components.`" message,
+as well as a socket-connected debugger message to appear before manipulating files.
+The redux dev tools is available by default, so feel free to install that extension. (While you are at it, take a look at the react dev tools extension!)
 ##### 4) Modify files
 JS hot reloading is avaliable to any files in the "src" directory. Perhaps the "routes.js" file might be a good place to start.
 CSS hot reloading is avaliable to any files in the "dist/css" folder.
@@ -139,4 +140,3 @@ npm run jspm -- build ./bootstrap/src/browser.js ./dist/js/browser.bundle.js --p
 ```
 <sub>*For multiple bundles, use systemjs builder's [bundle arithmetic.](https://github.com/systemjs/builder#bundle-arithmetic)*</sub>
 ##### 6) Have fun :]
-

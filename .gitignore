@@ -8,6 +8,7 @@ node_modules
 jspm_packages
 
 # Arbitrary Directories
+./dist
 test/environment
 coverage
 tmp
